@@ -1,0 +1,176 @@
+import React, { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { useAppStore } from "../store";
+import { removeVietnameseTones } from "../utils";
+import { Search, Eye, BookOpen, AlertCircle } from "lucide-react";
+
+export function Practice() {
+  const { banks } = useAppStore();
+  const [selectedBankId, setSelectedBankId] = useState<string>(banks[0]?.id || "");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [revealedQuestions, setRevealedQuestions] = useState<Set<string>>(new Set());
+
+  const selectedBank = banks.find((b) => b.id === selectedBankId);
+
+  const filteredQuestions = useMemo(() => {
+    if (!selectedBank) return [];
+    if (!searchQuery.trim()) return selectedBank.questions;
+
+    const normalizedQuery = removeVietnameseTones(searchQuery);
+    return selectedBank.questions.filter((q) => {
+      const matchText = removeVietnameseTones(q.text).includes(normalizedQuery);
+      const matchOpts = Object.values(q.options).some((opt) =>
+        removeVietnameseTones(opt).includes(normalizedQuery)
+      );
+      return matchText || matchOpts;
+    });
+  }, [selectedBank, searchQuery]);
+
+  const toggleReveal = (id: string) => {
+    setRevealedQuestions((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) newSet.delete(id);
+      else newSet.add(id);
+      return newSet;
+    });
+  };
+
+  const highlightText = (text: string, query: string) => {
+    if (!query.trim()) return text;
+    // This is a simplified highlighter. For exact match ignoring accents, it's complex to map back to original text indices.
+    // For now, we'll just return text if we don't want to implement a complex diff highlighter.
+    // Alternatively, a simple RegExp if we assume standard characters:
+    try {
+      const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, "gi");
+      const parts = text.split(regex);
+      return parts.map((part, i) =>
+        regex.test(part) ? (
+          <span key={i} className="bg-blue-500/30 text-blue-200 px-1 rounded-sm">
+            {part}
+          </span>
+        ) : (
+          part
+        )
+      );
+    } catch {
+      return text;
+    }
+  };
+
+  if (banks.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-slate-500">
+        <BookOpen size={48} className="mb-4 opacity-50" />
+        <p>Chưa có kho dữ liệu nào. Hãy thêm kho ở mục Quản lý kho.</p>
+      </div>
+    );
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-6">
+      <header className="flex flex-col md:flex-row gap-4 justify-between md:items-center bg-slate-900/50 p-6 rounded-2xl border border-slate-800 backdrop-blur-sm">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-100">Ôn tập tự do</h1>
+          <p className="text-sm text-slate-400 mt-1">Luyện tập không giới hạn thời gian</p>
+        </div>
+
+        <div className="flex-1 max-w-sm w-full space-y-3">
+          <select
+            value={selectedBankId}
+            onChange={(e) => {
+              setSelectedBankId(e.target.value);
+              setRevealedQuestions(new Set());
+              setSearchQuery("");
+            }}
+            className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none appearance-none"
+          >
+            {banks.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name} ({b.questions.length} câu)
+              </option>
+            ))}
+          </select>
+
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+              <Search size={16} />
+            </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-slate-950 border border-slate-800 text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 outline-none transition-colors"
+              placeholder="Tìm kiếm câu hỏi..."
+            />
+          </div>
+        </div>
+      </header>
+
+      {selectedBank?.questions.length === 0 ? (
+        <div className="text-center py-12 text-slate-500 flex flex-col items-center">
+          <AlertCircle size={32} className="mb-2 opacity-50 text-amber-500" />
+          <p>Kho này chưa có câu hỏi nào.</p>
+        </div>
+      ) : filteredQuestions.length === 0 ? (
+        <div className="text-center py-12 text-slate-500">
+          Không tìm thấy câu hỏi nào phù hợp với "{searchQuery}"
+        </div>
+      ) : (
+        <div className="space-y-4 pb-20">
+          {filteredQuestions.map((q, idx) => {
+            const isRevealed = revealedQuestions.has(q.id);
+            return (
+              <motion.div
+                layout
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                key={q.id}
+                className="bg-slate-900/40 border border-slate-800 rounded-xl p-5 hover:bg-slate-900/60 transition-colors"
+              >
+                <div className="flex justify-between items-start gap-4 mb-4">
+                  <h3 className="text-slate-200 font-medium leading-relaxed">
+                    <span className="text-blue-400 font-bold mr-2">Câu {idx + 1}:</span>
+                    {highlightText(q.text, searchQuery)}
+                  </h3>
+                  <button
+                    onClick={() => toggleReveal(q.id)}
+                    className={`shrink-0 p-2 rounded-lg border transition-all flex items-center gap-2 text-sm ${
+                      isRevealed
+                        ? "bg-slate-800 border-slate-700 text-slate-300"
+                        : "bg-blue-600 hover:bg-blue-700 border-blue-500 text-white shadow-lg shadow-blue-500/20"
+                    }`}
+                  >
+                    <Eye size={16} /> {isRevealed ? "Ẩn đáp án" : "Xem đáp án"}
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {(["A", "B", "C", "D"] as const).map((opt) => {
+                    const isCorrect = q.correct === opt;
+                    const showAsCorrect = isRevealed && isCorrect;
+                    
+                    return (
+                      <div
+                        key={opt}
+                        className={`p-3 rounded-lg border transition-all ${
+                          showAsCorrect
+                            ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-100 shadow-[0_0_15px_rgba(16,185,129,0.1)] ring-1 ring-emerald-500/50"
+                            : "bg-slate-950 border-slate-800 text-slate-400 opacity-80"
+                        } ${isRevealed && !isCorrect ? "opacity-30 grayscale" : ""}`}
+                      >
+                        <span className={`font-bold mr-2 ${showAsCorrect ? "text-emerald-400" : "text-slate-500"}`}>
+                          {opt}.
+                        </span>
+                        {highlightText(q.options[opt], searchQuery)}
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
+    </motion.div>
+  );
+}
