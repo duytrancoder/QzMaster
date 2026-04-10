@@ -24,41 +24,17 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const banksRaw = useLiveQuery(() => db.questionBanks.toArray()) || [];
-  const questionsRaw = useLiveQuery(() => db.questions.toArray()) || [];
   const historyRaw = useLiveQuery(() => db.examHistory.reverse().toArray()) || [];
   
   const [activeExam, setActiveExamState] = useState<ActiveExam | null>(null);
 
-  const banks = useMemo<Bank[]>(() => {
-    return banksRaw.map(b => ({
-      id: b.id,
-      name: b.name,
-      questions: questionsRaw.filter(q => q.bankId === b.id).map(q => ({
-        id: q.id,
-        text: q.text,
-        options: q.options,
-        correct: q.correct
-      }))
-    }));
-  }, [banksRaw, questionsRaw]);
-
   // Context Actions synced to Dexie
   const addBank = async (bank: Bank) => {
     await db.questionBanks.add({ id: bank.id, name: bank.name });
-    if (bank.questions && bank.questions.length > 0) {
-       const qsToInsert = bank.questions.map(q => ({ ...q, bankId: bank.id }));
-       await db.questions.bulkAdd(qsToInsert);
-    }
   };
 
   const updateBank = async (bank: Bank) => {
     await db.questionBanks.put({ id: bank.id, name: bank.name });
-    // Updating questions entails removing old ones and adding new ones to keep it simple, or using put
-    await db.questions.where('bankId').equals(bank.id).delete();
-    if (bank.questions && bank.questions.length > 0) {
-      const qsToInsert = bank.questions.map(q => ({ ...q, bankId: bank.id }));
-      await db.questions.bulkAdd(qsToInsert);
-    }
   };
 
   const deleteBank = async (id: string) => {
@@ -81,12 +57,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setActiveExamState(exam);
   };
 
-  const importBanks = async (newBanks: Bank[]) => {
+  const importBanks = async (newBanks: any[]) => {
     // Simple filter to skip existing bank names or IDs
     for (const b of newBanks) {
       const exist = await db.questionBanks.get(b.id);
       if (!exist) {
-        await addBank(b);
+        await addBank({ id: b.id, name: b.name });
+        if (b.questions && b.questions.length > 0) {
+           const qsToInsert = b.questions.map((q: any) => ({ ...q, bankId: b.id }));
+           await db.questions.bulkAdd(qsToInsert);
+        }
       }
     }
   };
@@ -94,7 +74,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   return (
     <AppContext.Provider
       value={{
-        banks,
+        banks: banksRaw,
         history: historyRaw,
         activeExam,
         addBank,

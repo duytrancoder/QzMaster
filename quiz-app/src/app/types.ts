@@ -1,19 +1,20 @@
 export interface Question {
   id: string;
-  text: string;
+  content?: string;
+  text?: string; // backwards compatibility
   options: {
     A: string;
     B: string;
     C: string;
     D: string;
   };
-  correct: "A" | "B" | "C" | "D";
+  correctAnswer?: "A" | "B" | "C" | "D";
+  correct?: "A" | "B" | "C" | "D"; // backwards compatibility
 }
 
 export interface Bank {
   id: string;
   name: string;
-  questions: Question[];
 }
 
 export interface ExamHistory {

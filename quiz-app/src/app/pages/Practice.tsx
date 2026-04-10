@@ -2,6 +2,8 @@ import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useAppStore } from "../store";
 import { removeVietnameseTones } from "../utils";
+import { db } from "../../db";
+import { useLiveQuery } from "dexie-react-hooks";
 import { Search, Eye, BookOpen, AlertCircle } from "lucide-react";
 
 export function Practice() {
@@ -11,20 +13,21 @@ export function Practice() {
   const [revealedQuestions, setRevealedQuestions] = useState<Set<string>>(new Set());
 
   const selectedBank = banks.find((b) => b.id === selectedBankId);
+  const questions = useLiveQuery(() => selectedBankId ? db.questions.where('bankId').equals(selectedBankId).toArray() : [], [selectedBankId]) || [];
 
   const filteredQuestions = useMemo(() => {
     if (!selectedBank) return [];
-    if (!searchQuery.trim()) return selectedBank.questions;
+    if (!searchQuery.trim()) return questions;
 
     const normalizedQuery = removeVietnameseTones(searchQuery);
-    return selectedBank.questions.filter((q) => {
-      const matchText = removeVietnameseTones(q.text).includes(normalizedQuery);
+    return questions.filter((q) => {
+      const matchText = removeVietnameseTones(q.content || q.text || "").includes(normalizedQuery);
       const matchOpts = Object.values(q.options).some((opt) =>
         removeVietnameseTones(opt).includes(normalizedQuery)
       );
       return matchText || matchOpts;
     });
-  }, [selectedBank, searchQuery]);
+  }, [selectedBank, questions, searchQuery]);
 
   const toggleReveal = (id: string) => {
     setRevealedQuestions((prev) => {
@@ -86,7 +89,7 @@ export function Practice() {
           >
             {banks.map((b) => (
               <option key={b.id} value={b.id}>
-                {b.name} ({b.questions.length} câu)
+                {b.name}
               </option>
             ))}
           </select>
@@ -106,7 +109,7 @@ export function Practice() {
         </div>
       </header>
 
-      {selectedBank?.questions.length === 0 ? (
+      {questions.length === 0 ? (
         <div className="text-center py-12 text-slate-500 flex flex-col items-center">
           <AlertCircle size={32} className="mb-2 opacity-50 text-amber-500" />
           <p>Kho này chưa có câu hỏi nào.</p>
@@ -130,7 +133,7 @@ export function Practice() {
                 <div className="flex justify-between items-start gap-4 mb-4">
                   <h3 className="text-slate-200 font-medium leading-relaxed">
                     <span className="text-blue-400 font-bold mr-2">Câu {idx + 1}:</span>
-                    {highlightText(q.text, searchQuery)}
+                    {highlightText(q.content || q.text || "", searchQuery)}
                   </h3>
                   <button
                     onClick={() => toggleReveal(q.id)}
@@ -146,7 +149,7 @@ export function Practice() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {(["A", "B", "C", "D"] as const).map((opt) => {
-                    const isCorrect = q.correct === opt;
+                    const isCorrect = (q.correctAnswer || q.correct) === opt;
                     const showAsCorrect = isRevealed && isCorrect;
                     
                     return (

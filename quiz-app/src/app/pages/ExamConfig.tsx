@@ -3,6 +3,8 @@ import { useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { useAppStore } from "../store";
 import { generateId } from "../utils";
+import { db } from "../../db";
+import { useLiveQuery } from "dexie-react-hooks";
 import { Play, Settings2, Clock, CheckCircle2, ChevronRight, Hash } from "lucide-react";
 import { toast } from "sonner";
 import { Question } from "../types";
@@ -18,13 +20,14 @@ export function ExamConfig() {
   const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(new Set());
 
   const selectedBank = banks.find((b) => b.id === selectedBankId);
+  const questions = useLiveQuery(() => selectedBankId ? db.questions.where('bankId').equals(selectedBankId).toArray() : [], [selectedBankId]) || [];
 
   useEffect(() => {
     if (selectedBank) {
-      setRandomCount(Math.min(10, selectedBank.questions.length));
+      setRandomCount(Math.min(10, questions.length));
       setSelectedQuestions(new Set());
     }
-  }, [selectedBankId, selectedBank]);
+  }, [selectedBankId, questions.length]);
 
   const handleStart = () => {
     if (!selectedBank) return;
@@ -32,21 +35,21 @@ export function ExamConfig() {
     let finalQuestions: Question[] = [];
 
     if (mode === "all") {
-      finalQuestions = [...selectedBank.questions];
+      finalQuestions = [...questions];
     } else if (mode === "random") {
-      if (randomCount > selectedBank.questions.length || randomCount <= 0) {
-        toast.error(`Số lượng không hợp lệ. Tối đa là ${selectedBank.questions.length}.`);
+      if (randomCount > questions.length || randomCount <= 0) {
+        toast.error(`Số lượng không hợp lệ. Tối đa là ${questions.length}.`);
         return;
       }
       // Shuffle array
-      const shuffled = [...selectedBank.questions].sort(() => 0.5 - Math.random());
+      const shuffled = [...questions].sort(() => 0.5 - Math.random());
       finalQuestions = shuffled.slice(0, randomCount);
     } else {
       if (selectedQuestions.size === 0) {
         toast.error("Vui lòng chọn ít nhất 1 câu hỏi.");
         return;
       }
-      finalQuestions = selectedBank.questions.filter((q) => selectedQuestions.has(q.id));
+      finalQuestions = questions.filter((q) => selectedQuestions.has(q.id));
     }
 
     if (finalQuestions.length === 0) {
@@ -97,7 +100,7 @@ export function ExamConfig() {
           >
             {banks.map((b) => (
               <option key={b.id} value={b.id}>
-                {b.name} - ({b.questions.length} câu)
+                {b.name}
               </option>
             ))}
           </select>
@@ -138,14 +141,14 @@ export function ExamConfig() {
                     <input
                       type="number"
                       min={1}
-                      max={selectedBank?.questions.length || 1}
+                      max={questions.length || 1}
                       value={randomCount}
                       onChange={(e) => setRandomCount(Number(e.target.value))}
                       className="w-full bg-transparent text-slate-200 outline-none font-medium"
                     />
                   </div>
                   <div className="text-xs text-slate-500 bg-slate-900 px-3 py-1 rounded-full border border-slate-800">
-                    Max: {selectedBank?.questions.length || 0}
+                    Max: {questions.length || 0}
                   </div>
                 </div>
               </motion.div>
@@ -159,17 +162,17 @@ export function ExamConfig() {
                     <button
                       onClick={() =>
                         setSelectedQuestions(
-                          selectedQuestions.size === selectedBank.questions.length
+                          selectedQuestions.size === questions.length
                             ? new Set()
-                            : new Set(selectedBank.questions.map((q) => q.id))
+                            : new Set(questions.map((q) => q.id))
                         )
                       }
                       className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
                     >
-                      {selectedQuestions.size === selectedBank.questions.length ? "Bỏ chọn tất cả" : "Chọn tất cả"}
+                      {selectedQuestions.size === questions.length ? "Bỏ chọn tất cả" : "Chọn tất cả"}
                     </button>
                   </div>
-                  {selectedBank.questions.map((q, i) => (
+                  {questions.map((q, i) => (
                     <label key={q.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-900 cursor-pointer border border-transparent hover:border-slate-800 transition-colors group">
                       <input
                         type="checkbox"
@@ -184,7 +187,7 @@ export function ExamConfig() {
                       />
                       <span className="text-sm text-slate-300 group-hover:text-slate-100 line-clamp-2">
                         <span className="text-slate-500 mr-2">#{i + 1}</span>
-                        {q.text}
+                        {q.content || q.text}
                       </span>
                     </label>
                   ))}

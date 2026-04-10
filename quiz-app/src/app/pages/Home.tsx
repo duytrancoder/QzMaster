@@ -2,12 +2,14 @@ import React from "react";
 import { Link } from "react-router";
 import { motion } from "motion/react";
 import { useAppStore } from "../store";
+import { db } from "../../db";
+import { useLiveQuery } from "dexie-react-hooks";
 import { BookOpen, Database, PlayCircle } from "lucide-react";
 
 export function Home() {
   const { banks, history } = useAppStore();
+  const totalQuestions = useLiveQuery(() => db.questions.count()) || 0;
 
-  const totalQuestions = banks.reduce((acc, curr) => acc + curr.questions.length, 0);
   const totalExams = history.length;
   const averageScore = history.length > 0
     ? history.reduce((acc, curr) => acc + curr.score / curr.total, 0) / history.length

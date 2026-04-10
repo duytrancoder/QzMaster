@@ -65,7 +65,7 @@ export function ExamPlay() {
     setIsSubmitting(true);
     let score = 0;
     activeExam.questions.forEach((q) => {
-      if (answers[q.id] === q.correct) score++;
+      if (answers[q.id] === (q.correctAnswer || q.correct)) score++;
     });
 
     const historyItem = {
@@ -115,7 +115,7 @@ export function ExamPlay() {
               <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-800 text-slate-400 text-sm font-bold mr-3 shrink-0">
                 {idx + 1}
               </span>
-              {q.text}
+              {q.content || q.text}
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

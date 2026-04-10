@@ -71,7 +71,7 @@ export function Review() {
         </h2>
         {exam.questions.map((q, idx) => {
           const userAnswer = exam.answers[q.id];
-          const isCorrect = userAnswer === q.correct;
+          const isCorrect = userAnswer === (q.correctAnswer || q.correct);
           const isUnanswered = !userAnswer;
 
           return (
@@ -95,7 +95,7 @@ export function Review() {
                   {idx + 1}
                 </span>
                 <div className="flex-1">
-                  <h3 className="text-slate-200 font-medium leading-relaxed">{q.text}</h3>
+                  <h3 className="text-slate-200 font-medium leading-relaxed">{q.content || q.text}</h3>
                   {isUnanswered && <span className="inline-block mt-2 text-xs font-medium px-2 py-1 rounded-md bg-amber-500/10 text-amber-500 border border-amber-500/20">Chưa trả lời</span>}
                 </div>
               </div>
@@ -103,7 +103,7 @@ export function Review() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-12">
                 {(["A", "B", "C", "D"] as const).map((opt) => {
                   const isUserSelected = userAnswer === opt;
-                  const isActuallyCorrect = q.correct === opt;
+                  const isActuallyCorrect = (q.correctAnswer || q.correct) === opt;
 
                   let optClass = "bg-slate-950 border-slate-800 text-slate-400";
                   let Icon = null;

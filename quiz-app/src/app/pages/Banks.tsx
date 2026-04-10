@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from "motion/react";
 import { useAppStore } from "../store";
 import { generateId } from "../utils";
 import { Bank, Question } from "../types";
+import { db } from "../../db";
+import { useLiveQuery } from "dexie-react-hooks";
 import { Plus, Upload, Trash2, Edit, ChevronDown, ChevronUp, Save, X, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -14,7 +16,7 @@ export function Banks() {
   const handleCreateBank = () => {
     const name = prompt("Nhập tên kho mới:");
     if (name?.trim()) {
-      addBank({ id: generateId(), name: name.trim(), questions: [] });
+      addBank({ id: generateId(), name: name.trim() });
       toast.success("Đã tạo kho mới");
     }
   };
@@ -107,6 +109,8 @@ function BankCard({
   onUpdate: (bank: Bank) => void;
 }) {
   const [showAddQuestion, setShowAddQuestion] = useState(false);
+  const { deleteBank, addQuestionToBank } = useAppStore();
+  const questions = useLiveQuery(() => db.questions.where('bankId').equals(bank.id).toArray(), [bank.id]) || [];
 
   return (
     <motion.div
@@ -119,7 +123,7 @@ function BankCard({
       <div className="p-5 flex justify-between items-center cursor-pointer hover:bg-slate-800/30 transition-colors" onClick={() => setEditing(!isEditing)}>
         <div>
           <h3 className="text-lg font-semibold text-slate-200">{bank.name}</h3>
-          <p className="text-sm text-slate-400 mt-1">{bank.questions.length} câu hỏi</p>
+          <p className="text-sm text-slate-400 mt-1">{questions.length} câu hỏi</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -160,7 +164,7 @@ function BankCard({
               {showAddQuestion && (
                 <AddQuestionForm
                   onAdd={(q) => {
-                    onUpdate({ ...bank, questions: [...bank.questions, q] });
+                    addQuestionToBank(bank.id, q);
                     setShowAddQuestion(false);
                     toast.success("Đã thêm câu hỏi");
                   }}
@@ -168,20 +172,21 @@ function BankCard({
                 />
               )}
 
-              {bank.questions.length === 0 ? (
+              {questions.length === 0 ? (
                 <p className="text-sm text-slate-500 py-4 text-center">Chưa có câu hỏi trong kho này.</p>
               ) : (
                 <div className="space-y-3 mt-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                  {bank.questions.map((q, idx) => (
+                  {questions.map((q, idx) => (
                     <div key={q.id} className="p-4 bg-slate-800/50 rounded-lg border border-slate-700/50">
                       <div className="flex justify-between items-start">
                         <p className="text-slate-200 font-medium text-sm">
-                          <span className="text-slate-500 mr-2">#{idx + 1}</span> {q.text}
+                          <span className="text-slate-500 mr-2">#{idx + 1}</span> {q.content || q.text}
                         </p>
                         <button
-                          onClick={() => {
+                          onClick={async () => {
                             if (confirm("Xóa câu hỏi này?")) {
-                              onUpdate({ ...bank, questions: bank.questions.filter((item) => item.id !== q.id) });
+                              await db.questions.delete(q.id);
+                              toast.success("Đã xóa câu hỏi");
                             }
                           }}
                           className="text-slate-500 hover:text-red-400 transition-colors"
@@ -194,7 +199,7 @@ function BankCard({
                           <div
                             key={opt}
                             className={`px-3 py-2 rounded-md text-xs border ${
-                              q.correct === opt
+                              (q.correctAnswer || q.correct) === opt
                                 ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 font-medium"
                                 : "bg-slate-900/50 border-slate-700/50 text-slate-400"
                             }`}
@@ -217,17 +222,17 @@ function BankCard({
 }
 
 function AddQuestionForm({ onAdd, onCancel }: { onAdd: (q: Question) => void; onCancel: () => void }) {
-  const [text, setText] = useState("");
+  const [content, setContent] = useState("");
   const [options, setOptions] = useState({ A: "", B: "", C: "", D: "" });
-  const [correct, setCorrect] = useState<"A" | "B" | "C" | "D">("A");
+  const [correctAnswer, setCorrectAnswer] = useState<"A" | "B" | "C" | "D">("A");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!text || !options.A || !options.B || !options.C || !options.D) {
+    if (!content || !options.A || !options.B || !options.C || !options.D) {
       toast.error("Vui lòng điền đủ thông tin");
       return;
     }
-    onAdd({ id: generateId(), text, options, correct });
+    onAdd({ id: generateId(), content, options, correctAnswer });
   };
 
   return (
@@ -240,8 +245,8 @@ function AddQuestionForm({ onAdd, onCancel }: { onAdd: (q: Question) => void; on
       <div>
         <label className="block text-xs font-medium text-slate-400 mb-1">Câu hỏi</label>
         <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
           className="w-full bg-slate-900 border border-slate-700 rounded-md p-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           rows={3}
           placeholder="Nhập nội dung câu hỏi..."
@@ -254,9 +259,9 @@ function AddQuestionForm({ onAdd, onCancel }: { onAdd: (q: Question) => void; on
           <div key={opt} className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setCorrect(opt)}
+              onClick={() => setCorrectAnswer(opt)}
               className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors ${
-                correct === opt ? "bg-emerald-500 text-white" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+                correctAnswer === opt ? "bg-emerald-500 text-white" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
               }`}
             >
               {opt}

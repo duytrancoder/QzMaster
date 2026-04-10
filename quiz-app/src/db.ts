@@ -1,8 +1,7 @@
 import Dexie, { type EntityTable } from 'dexie';
 import { Bank, Question, ExamHistory } from './app/types';
 
-// Omit questions from Bank for DB schema
-export type DBBank = Omit<Bank, 'questions'> & { id: string, name: string };
+export type DBBank = Bank;
 export type DBQuestion = Question & { bankId: string };
 export type DBExamHistory = ExamHistory;
 
