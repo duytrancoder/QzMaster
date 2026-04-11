@@ -23,7 +23,7 @@ export function Layout() {
         animate={{ width: isSidebarExpanded ? 256 : 80 }}
         className="border-r border-slate-800 bg-slate-900/50 flex flex-col relative z-20 shrink-0 overflow-hidden"
       >
-        <div className="p-6 flex items-center justify-between">
+        <div className={`p-6 flex items-center ${isSidebarExpanded ? "justify-between" : "justify-center"}`}>
           <AnimatePresence>
             {isSidebarExpanded && (
               <motion.h1 
@@ -53,7 +53,9 @@ export function Layout() {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 relative ${
+                className={`flex items-center py-3 rounded-xl transition-all duration-200 relative ${
+                  isSidebarExpanded ? "px-4 gap-3" : "justify-center"
+                } ${
                   isActive
                     ? "text-blue-400 font-medium"
                     : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
@@ -67,8 +69,8 @@ export function Layout() {
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   />
                 )}
-                <Icon size={20} className="relative z-10" />
-                <span className={`relative z-10 whitespace-nowrap overflow-hidden transition-opacity duration-200 ${isSidebarExpanded ? 'opacity-100 w-auto ml-3' : 'opacity-0 w-0 ml-0'}`}>
+                <Icon size={20} className="relative z-10 shrink-0" />
+                <span className={`relative z-10 whitespace-nowrap overflow-hidden transition-opacity duration-200 ${isSidebarExpanded ? 'opacity-100 w-auto' : 'opacity-0 w-0'}`}>
                   {item.name}
                 </span>
               </Link>
