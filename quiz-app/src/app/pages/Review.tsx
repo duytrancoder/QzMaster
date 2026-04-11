@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useParams, Link } from "react-router";
 import { motion } from "motion/react";
 import { useAppStore } from "../store";
@@ -8,6 +8,7 @@ import { CheckCircle2, XCircle, ArrowLeft, Trophy, Clock, History as HistoryIcon
 export function Review() {
   const { id } = useParams<{ id: string }>();
   const { history } = useAppStore();
+  const [filter, setFilter] = useState<"all" | "correct" | "incorrect">("all");
 
   const exam = history.find((h) => h.id === id);
 
@@ -66,10 +67,49 @@ export function Review() {
       </header>
 
       <div className="space-y-6">
-        <h2 className="text-xl font-semibold text-slate-200 flex items-center gap-2">
-          Chi tiết bài làm
-        </h2>
-        {exam.questions.map((q, idx) => {
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+          <h2 className="text-xl font-semibold text-slate-200 flex items-center gap-2">
+            Chi tiết bài làm
+          </h2>
+          <div className="flex bg-slate-900 border border-slate-800 rounded-lg p-1 overflow-x-auto w-full sm:w-auto">
+            <button
+              onClick={() => setFilter("all")}
+              className={`flex-1 sm:flex-none px-4 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${filter === "all" ? "bg-slate-700 text-slate-200 shadow-sm" : "text-slate-400 hover:text-slate-300"}`}
+            >
+              Tất cả
+            </button>
+            <button
+              onClick={() => setFilter("correct")}
+              className={`flex-1 sm:flex-none px-4 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${filter === "correct" ? "bg-emerald-500/20 text-emerald-400 shadow-sm" : "text-slate-400 hover:text-slate-300"}`}
+            >
+              Đúng
+            </button>
+            <button
+              onClick={() => setFilter("incorrect")}
+              className={`flex-1 sm:flex-none px-4 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${filter === "incorrect" ? "bg-red-500/20 text-red-400 shadow-sm" : "text-slate-400 hover:text-slate-300"}`}
+            >
+              Sai/Chưa làm
+            </button>
+          </div>
+        </div>
+
+        {exam.questions.map((q, idx) => ({ q, idx })).filter(({ q }) => {
+          const userAnswer = exam.answers[q.id];
+          const isCorrect = userAnswer === (q.correctAnswer || q.correct);
+          if (filter === "correct") return isCorrect;
+          if (filter === "incorrect") return !isCorrect;
+          return true;
+        }).length === 0 ? (
+          <div className="text-center py-12 text-slate-500 bg-slate-900/40 rounded-2xl border border-slate-800">
+            Không có câu hỏi nào trong mục này.
+          </div>
+        ) : exam.questions.map((q, idx) => ({ q, idx })).filter(({ q }) => {
+          const userAnswer = exam.answers[q.id];
+          const isCorrect = userAnswer === (q.correctAnswer || q.correct);
+          if (filter === "correct") return isCorrect;
+          if (filter === "incorrect") return !isCorrect;
+          return true;
+        }).map(({ q, idx }) => {
           const userAnswer = exam.answers[q.id];
           const isCorrect = userAnswer === (q.correctAnswer || q.correct);
           const isUnanswered = !userAnswer;
