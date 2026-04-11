@@ -50,7 +50,14 @@ export function ExamPlay() {
   if (!activeExam) return null;
 
   const handleSelectAnswer = (qId: string, opt: "A" | "B" | "C" | "D") => {
-    setAnswers((prev) => ({ ...prev, [qId]: opt }));
+    setAnswers((prev) => {
+      if (prev[qId] === opt) {
+        const newAnswers = { ...prev };
+        delete newAnswers[qId];
+        return newAnswers;
+      }
+      return { ...prev, [qId]: opt };
+    });
   };
 
   const handleSubmit = (isAuto = false) => {

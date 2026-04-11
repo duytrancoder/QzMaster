@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router";
-import { BookOpen, Edit3, History, Home, Settings, PlayCircle } from "lucide-react";
-import { motion } from "motion/react";
+import { BookOpen, Edit3, History, Home, Settings, PlayCircle, Menu, ChevronLeft } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 
 const navItems = [
   { name: "Trang chủ", path: "/", icon: Home },
@@ -13,16 +13,35 @@ const navItems = [
 
 export function Layout() {
   const location = useLocation();
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
 
   return (
     <div className="flex h-screen bg-slate-950 text-slate-100 font-sans">
       {/* Sidebar */}
-      <aside className="w-64 border-r border-slate-800 bg-slate-900/50 flex flex-col">
-        <div className="p-6">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
-            QzMaster
-          </h1>
-          <p className="text-sm text-slate-400 mt-1">Hệ thống ôn thi offline</p>
+      <motion.aside 
+        initial={false}
+        animate={{ width: isSidebarExpanded ? 256 : 80 }}
+        className="border-r border-slate-800 bg-slate-900/50 flex flex-col relative z-20 shrink-0 overflow-hidden"
+      >
+        <div className="p-6 flex items-center justify-between">
+          <AnimatePresence>
+            {isSidebarExpanded && (
+              <motion.h1 
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: "auto" }}
+                exit={{ opacity: 0, width: 0 }}
+                className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent whitespace-nowrap overflow-hidden"
+              >
+                QzMaster
+              </motion.h1>
+            )}
+          </AnimatePresence>
+          <button 
+            onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
+            className="p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors shrink-0"
+          >
+            <Menu size={24} />
+          </button>
         </div>
 
         <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
@@ -49,16 +68,20 @@ export function Layout() {
                   />
                 )}
                 <Icon size={20} className="relative z-10" />
-                <span className="relative z-10">{item.name}</span>
+                <span className={`relative z-10 whitespace-nowrap overflow-hidden transition-opacity duration-200 ${isSidebarExpanded ? 'opacity-100 w-auto ml-3' : 'opacity-0 w-0 ml-0'}`}>
+                  {item.name}
+                </span>
               </Link>
             );
           })}
         </nav>
         
-        <div className="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-          Dữ liệu lưu tại máy (Local)
-        </div>
-      </aside>
+        {isSidebarExpanded && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 border-t border-slate-800 text-xs text-slate-500 text-center whitespace-nowrap">
+            Dữ liệu lưu tại máy (Local)
+          </motion.div>
+        )}
+      </motion.aside>
 
       {/* Main Content */}
       <main className="flex-1 relative overflow-hidden">

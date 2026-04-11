@@ -10,7 +10,7 @@ export function Practice() {
   const { banks } = useAppStore();
   const [selectedBankId, setSelectedBankId] = useState<string>(banks[0]?.id || "");
   const [searchQuery, setSearchQuery] = useState("");
-  const [revealedQuestions, setRevealedQuestions] = useState<Set<string>>(new Set());
+  const [showAllAnswers, setShowAllAnswers] = useState(false);
 
   const selectedBank = banks.find((b) => b.id === selectedBankId);
   const questions = useLiveQuery(() => selectedBankId ? db.questions.where('bankId').equals(selectedBankId).toArray() : [], [selectedBankId]) || [];
@@ -28,15 +28,6 @@ export function Practice() {
       return matchText || matchOpts;
     });
   }, [selectedBank, questions, searchQuery]);
-
-  const toggleReveal = (id: string) => {
-    setRevealedQuestions((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) newSet.delete(id);
-      else newSet.add(id);
-      return newSet;
-    });
-  };
 
   const highlightText = (text: string, query: string) => {
     if (!query.trim()) return text;
@@ -82,7 +73,7 @@ export function Practice() {
             value={selectedBankId}
             onChange={(e) => {
               setSelectedBankId(e.target.value);
-              setRevealedQuestions(new Set());
+              setShowAllAnswers(false);
               setSearchQuery("");
             }}
             className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none appearance-none"
@@ -106,6 +97,16 @@ export function Practice() {
               placeholder="Tìm kiếm câu hỏi..."
             />
           </div>
+          <button
+            onClick={() => setShowAllAnswers(!showAllAnswers)}
+            className={`w-full sm:w-auto px-4 py-2.5 rounded-lg border flex items-center justify-center gap-2 text-sm font-medium transition-colors ${
+              showAllAnswers 
+                ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" 
+                : "bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20 hover:bg-blue-500"
+            }`}
+          >
+            <Eye size={16} /> {showAllAnswers ? "Ẩn đáp án toàn bộ" : "Xem đáp án toàn bộ"}
+          </button>
         </div>
       </header>
 
@@ -121,7 +122,7 @@ export function Practice() {
       ) : (
         <div className="space-y-4 pb-20">
           {filteredQuestions.map((q, idx) => {
-            const isRevealed = revealedQuestions.has(q.id);
+            const isRevealed = showAllAnswers;
             return (
               <motion.div
                 layout
@@ -135,16 +136,6 @@ export function Practice() {
                     <span className="text-blue-400 font-bold mr-2">Câu {idx + 1}:</span>
                     {highlightText(q.content || q.text || "", searchQuery)}
                   </h3>
-                  <button
-                    onClick={() => toggleReveal(q.id)}
-                    className={`shrink-0 p-2 rounded-lg border transition-all flex items-center gap-2 text-sm ${
-                      isRevealed
-                        ? "bg-slate-800 border-slate-700 text-slate-300"
-                        : "bg-blue-600 hover:bg-blue-700 border-blue-500 text-white shadow-lg shadow-blue-500/20"
-                    }`}
-                  >
-                    <Eye size={16} /> {isRevealed ? "Ẩn đáp án" : "Xem đáp án"}
-                  </button>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
