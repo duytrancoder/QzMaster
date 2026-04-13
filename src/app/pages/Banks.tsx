@@ -1,23 +1,36 @@
-import React, { useState, useRef } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { useAppStore } from "../store";
-import { generateId } from "../utils";
-import { Bank, Question } from "../types";
-import { db } from "../../db";
-import { useLiveQuery } from "dexie-react-hooks";
-import { Plus, Upload, Trash2, Edit, ChevronDown, ChevronUp, Save, X, Settings2 } from "lucide-react";
-import { toast } from "sonner";
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { useAppStore } from '../store';
+import { generateId } from '../utils';
+import { Bank, Question } from '../types';
+import { Plus, Upload, Trash2, ChevronDown, ChevronUp, Save } from 'lucide-react';
+import { toast } from 'sonner';
+
+// ─── Banks Page ───────────────────────────────────────────────────────────────
 
 export function Banks() {
-  const { banks, addBank, deleteBank, updateBank, importBanks } = useAppStore();
+  const { banks, addBank, deleteBank, updateBank, importBanks, isLoadingBanks } = useAppStore();
   const [editingBankId, setEditingBankId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [newBankName, setNewBankName] = useState('');
+  const [showNameInput, setShowNameInput] = useState(false);
 
-  const handleCreateBank = () => {
-    const name = prompt("Nhập tên kho mới:");
-    if (name?.trim()) {
-      addBank({ id: generateId(), name: name.trim() });
-      toast.success("Đã tạo kho mới");
+  const handleCreateBank = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newBankName.trim() || isCreating) return;
+    setIsCreating(true);
+    try {
+      await addBank(newBankName.trim());
+      toast.success('Đã tạo kho mới!');
+      setNewBankName('');
+      setShowNameInput(false);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('[handleCreateBank]', err);
+      toast.error(`Tạo kho thất bại: ${msg}`);
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -26,25 +39,26 @@ export function Banks() {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const json = JSON.parse(event.target?.result as string);
         if (json && Array.isArray(json.banks)) {
-          importBanks(json.banks);
-          toast.success("Nhập dữ liệu thành công!");
+          await importBanks(json.banks);
+          toast.success('Nhập dữ liệu thành công!');
         } else {
-          toast.error("File JSON không đúng định dạng. Cần mảng 'banks'.");
+          toast.error("File JSON không đúng định dạng. Cần có mảng 'banks'.");
         }
-      } catch (err) {
-        toast.error("Lỗi đọc file JSON.");
+      } catch {
+        toast.error('Lỗi đọc file JSON.');
       }
     };
     reader.readAsText(file);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="max-w-5xl mx-auto space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-100">Kho ôn tập</h1>
@@ -59,7 +73,7 @@ export function Banks() {
             <Upload size={18} /> Nhập JSON
           </button>
           <button
-            onClick={handleCreateBank}
+            onClick={() => setShowNameInput(true)}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-lg shadow-blue-500/20"
           >
             <Plus size={18} /> Tạo kho mới
@@ -67,33 +81,86 @@ export function Banks() {
         </div>
       </div>
 
-      <div className="space-y-4">
-        <AnimatePresence>
-          {banks.length === 0 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12 text-slate-500 border border-dashed border-slate-800 rounded-xl">
-              Chưa có kho câu hỏi nào. Hãy tạo mới hoặc nhập từ file JSON.
-            </motion.div>
-          )}
-          {banks.map((bank) => (
-            <BankCard
-              key={bank.id}
-              bank={bank}
-              isEditing={editingBankId === bank.id}
-              setEditing={(isEdit) => setEditingBankId(isEdit ? bank.id : null)}
-              onDelete={() => {
-                if (confirm("Bạn có chắc chắn muốn xóa kho này?")) {
-                  deleteBank(bank.id);
-                  toast.success("Đã xóa kho");
-                }
-              }}
-              onUpdate={updateBank}
+      {/* Inline create bank form */}
+      <AnimatePresence>
+        {showNameInput && (
+          <motion.form
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            onSubmit={handleCreateBank}
+            className="flex gap-3 overflow-hidden"
+          >
+            <input
+              autoFocus
+              value={newBankName}
+              onChange={(e) => setNewBankName(e.target.value)}
+              placeholder="Nhập tên kho mới..."
+              className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-200 text-sm focus:outline-none focus:border-blue-500"
             />
-          ))}
-        </AnimatePresence>
+            <button
+              type="submit"
+              disabled={isCreating}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              {isCreating ? 'Đang tạo...' : 'Tạo'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setShowNameInput(false); setNewBankName(''); }}
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-sm transition-colors"
+            >
+              Hủy
+            </button>
+          </motion.form>
+        )}
+      </AnimatePresence>
+
+      {/* Banks list */}
+      <div className="space-y-4">
+        {isLoadingBanks ? (
+          <div className="text-center py-12 text-slate-500 space-y-2">
+            <div className="w-8 h-8 border-2 border-slate-700 border-t-blue-500 rounded-full animate-spin mx-auto" />
+            <p>Đang tải dữ liệu...</p>
+          </div>
+        ) : (
+          <AnimatePresence>
+            {banks.length === 0 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center py-12 text-slate-500 border border-dashed border-slate-800 rounded-xl"
+              >
+                Chưa có kho câu hỏi nào. Hãy tạo mới hoặc nhập từ file JSON.
+              </motion.div>
+            )}
+            {banks.map((bank) => (
+              <BankCard
+                key={bank.id}
+                bank={bank}
+                isEditing={editingBankId === bank.id}
+                setEditing={(isEdit) => setEditingBankId(isEdit ? bank.id : null)}
+                onDelete={async () => {
+                  if (confirm('Bạn có chắc chắn muốn xóa kho này và toàn bộ câu hỏi?')) {
+                    try {
+                      await deleteBank(bank.id);
+                      toast.success('Đã xóa kho');
+                    } catch {
+                      toast.error('Xóa kho thất bại');
+                    }
+                  }
+                }}
+                onUpdate={updateBank}
+              />
+            ))}
+          </AnimatePresence>
+        )}
       </div>
     </motion.div>
   );
 }
+
+// ─── BankCard ─────────────────────────────────────────────────────────────────
 
 function BankCard({
   bank,
@@ -106,11 +173,34 @@ function BankCard({
   isEditing: boolean;
   setEditing: (val: boolean) => void;
   onDelete: () => void;
-  onUpdate: (bank: Bank) => void;
+  onUpdate: (bank: Bank) => Promise<void>;
 }) {
+  const { addQuestionToBank, deleteQuestion, getQuestionsForBank } = useAppStore();
   const [showAddQuestion, setShowAddQuestion] = useState(false);
-  const { deleteBank, addQuestionToBank } = useAppStore();
-  const questions = useLiveQuery(() => db.questions.where('bankId').equals(bank.id).toArray(), [bank.id]) || [];
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
+
+  // Load questions when panel expands
+  useEffect(() => {
+    if (isEditing) {
+      setIsLoadingQuestions(true);
+      getQuestionsForBank(bank.id)
+        .then(setQuestions)
+        .catch(() => toast.error('Không thể tải câu hỏi'))
+        .finally(() => setIsLoadingQuestions(false));
+    }
+  }, [isEditing, bank.id]);
+
+  const handleDeleteQuestion = async (qId: string) => {
+    if (!confirm('Xóa câu hỏi này?')) return;
+    try {
+      await deleteQuestion(qId);
+      setQuestions((prev) => prev.filter((q) => q.id !== qId));
+      toast.success('Đã xóa câu hỏi');
+    } catch {
+      toast.error('Xóa câu hỏi thất bại');
+    }
+  };
 
   return (
     <motion.div
@@ -120,17 +210,17 @@ function BankCard({
       exit={{ opacity: 0, scale: 0.95 }}
       className="bg-slate-900/40 border border-slate-800 rounded-xl overflow-hidden backdrop-blur-sm"
     >
-      <div className="p-5 flex justify-between items-center cursor-pointer hover:bg-slate-800/30 transition-colors" onClick={() => setEditing(!isEditing)}>
+      <div
+        className="p-5 flex justify-between items-center cursor-pointer hover:bg-slate-800/30 transition-colors"
+        onClick={() => setEditing(!isEditing)}
+      >
         <div>
           <h3 className="text-lg font-semibold text-slate-200">{bank.name}</h3>
-          <p className="text-sm text-slate-400 mt-1">{questions.length} câu hỏi</p>
+          <p className="text-sm text-slate-400 mt-1">{isEditing ? `${questions.length} câu hỏi` : 'Nhấn để mở rộng'}</p>
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
             className="p-2 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-colors"
             title="Xóa kho"
           >
@@ -146,7 +236,7 @@ function BankCard({
         {isEditing && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
+            animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             className="border-t border-slate-800 bg-slate-900/80"
           >
@@ -163,16 +253,25 @@ function BankCard({
 
               {showAddQuestion && (
                 <AddQuestionForm
-                  onAdd={(q) => {
-                    addQuestionToBank(bank.id, q);
-                    setShowAddQuestion(false);
-                    toast.success("Đã thêm câu hỏi");
+                  onAdd={async (q) => {
+                    try {
+                      await addQuestionToBank(bank.id, q);
+                      setQuestions((prev) => [...prev, q]);
+                      setShowAddQuestion(false);
+                      toast.success('Đã thêm câu hỏi');
+                    } catch {
+                      toast.error('Thêm câu hỏi thất bại');
+                    }
                   }}
                   onCancel={() => setShowAddQuestion(false)}
                 />
               )}
 
-              {questions.length === 0 ? (
+              {isLoadingQuestions ? (
+                <div className="text-center py-6">
+                  <div className="w-6 h-6 border-2 border-slate-700 border-t-blue-500 rounded-full animate-spin mx-auto" />
+                </div>
+              ) : questions.length === 0 ? (
                 <p className="text-sm text-slate-500 py-4 text-center">Chưa có câu hỏi trong kho này.</p>
               ) : (
                 <div className="space-y-3 mt-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
@@ -183,25 +282,20 @@ function BankCard({
                           <span className="text-slate-500 mr-2">#{idx + 1}</span> {q.content || q.text}
                         </p>
                         <button
-                          onClick={async () => {
-                            if (confirm("Xóa câu hỏi này?")) {
-                              await db.questions.delete(q.id);
-                              toast.success("Đã xóa câu hỏi");
-                            }
-                          }}
-                          className="text-slate-500 hover:text-red-400 transition-colors"
+                          onClick={() => handleDeleteQuestion(q.id)}
+                          className="text-slate-500 hover:text-red-400 transition-colors ml-2 shrink-0"
                         >
                           <Trash2 size={16} />
                         </button>
                       </div>
                       <div className="grid grid-cols-2 gap-2 mt-3">
-                        {["A", "B", "C", "D"].map((opt) => (
+                        {(['A', 'B', 'C', 'D'] as const).map((opt) => (
                           <div
                             key={opt}
                             className={`px-3 py-2 rounded-md text-xs border ${
                               (q.correctAnswer || q.correct) === opt
-                                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 font-medium"
-                                : "bg-slate-900/50 border-slate-700/50 text-slate-400"
+                                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 font-medium'
+                                : 'bg-slate-900/50 border-slate-700/50 text-slate-400'
                             }`}
                           >
                             <span className="font-bold mr-2">{opt}.</span>
@@ -221,18 +315,27 @@ function BankCard({
   );
 }
 
-function AddQuestionForm({ onAdd, onCancel }: { onAdd: (q: Question) => void; onCancel: () => void }) {
-  const [content, setContent] = useState("");
-  const [options, setOptions] = useState({ A: "", B: "", C: "", D: "" });
-  const [correctAnswer, setCorrectAnswer] = useState<"A" | "B" | "C" | "D">("A");
+// ─── AddQuestionForm ──────────────────────────────────────────────────────────
 
-  const handleSubmit = (e: React.FormEvent) => {
+function AddQuestionForm({ onAdd, onCancel }: { onAdd: (q: Question) => Promise<void>; onCancel: () => void }) {
+  const [content, setContent] = useState('');
+  const [options, setOptions] = useState({ A: '', B: '', C: '', D: '' });
+  const [correctAnswer, setCorrectAnswer] = useState<'A' | 'B' | 'C' | 'D'>('A');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content || !options.A || !options.B || !options.C || !options.D) {
-      toast.error("Vui lòng điền đủ thông tin");
+      toast.error('Vui lòng điền đủ thông tin');
       return;
     }
-    onAdd({ id: generateId(), content, options, correctAnswer });
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await onAdd({ id: generateId(), content, options, correctAnswer });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -255,13 +358,13 @@ function AddQuestionForm({ onAdd, onCancel }: { onAdd: (q: Question) => void; on
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {(["A", "B", "C", "D"] as const).map((opt) => (
+        {(['A', 'B', 'C', 'D'] as const).map((opt) => (
           <div key={opt} className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setCorrectAnswer(opt)}
               className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors ${
-                correctAnswer === opt ? "bg-emerald-500 text-white" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+                correctAnswer === opt ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
               }`}
             >
               {opt}
@@ -288,9 +391,10 @@ function AddQuestionForm({ onAdd, onCancel }: { onAdd: (q: Question) => void; on
         </button>
         <button
           type="submit"
-          className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center gap-2"
+          disabled={isSubmitting}
+          className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-md transition-colors flex items-center gap-2"
         >
-          <Save size={16} /> Lưu câu hỏi
+          <Save size={16} /> {isSubmitting ? 'Đang lưu...' : 'Lưu câu hỏi'}
         </button>
       </div>
     </motion.form>

@@ -1,34 +1,47 @@
-import React, { useState } from "react";
-import { Link, Outlet, useLocation } from "react-router";
-import { BookOpen, Edit3, History, Home, Settings, PlayCircle, Menu, ChevronLeft } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
+import React, { useState } from 'react';
+import { Link, Outlet, useLocation } from 'react-router';
+import { BookOpen, Edit3, History, Home, PlayCircle, Menu, LogOut } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { useAuth } from '../../context/AuthContext';
+import { toast } from 'sonner';
 
 const navItems = [
-  { name: "Trang chủ", path: "/", icon: Home },
-  { name: "Kho ôn tập", path: "/banks", icon: BookOpen },
-  { name: "Ôn tập tự do", path: "/practice", icon: Edit3 },
-  { name: "Thi thử", path: "/exam/config", icon: PlayCircle },
-  { name: "Lịch sử", path: "/history", icon: History },
+  { name: 'Trang chủ', path: '/', icon: Home },
+  { name: 'Kho ôn tập', path: '/banks', icon: BookOpen },
+  { name: 'Ôn tập tự do', path: '/practice', icon: Edit3 },
+  { name: 'Thi thử', path: '/exam/config', icon: PlayCircle },
+  { name: 'Lịch sử', path: '/history', icon: History },
 ];
 
 export function Layout() {
   const location = useLocation();
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
+  const { user, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast.success('Đã đăng xuất.');
+    } catch {
+      toast.error('Đăng xuất thất bại.');
+    }
+  };
 
   return (
     <div className="flex h-screen bg-slate-950 text-slate-100 font-sans">
       {/* Sidebar */}
-      <motion.aside 
+      <motion.aside
         initial={false}
         animate={{ width: isSidebarExpanded ? 256 : 80 }}
         className="border-r border-slate-800 bg-slate-900/50 flex flex-col relative z-20 shrink-0 overflow-hidden"
       >
-        <div className={`p-6 flex items-center ${isSidebarExpanded ? "justify-between" : "justify-center"}`}>
+        {/* Header */}
+        <div className={`p-6 flex items-center ${isSidebarExpanded ? 'justify-between' : 'justify-center'}`}>
           <AnimatePresence>
             {isSidebarExpanded && (
-              <motion.h1 
+              <motion.h1
                 initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: "auto" }}
+                animate={{ opacity: 1, width: 'auto' }}
                 exit={{ opacity: 0, width: 0 }}
                 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent whitespace-nowrap overflow-hidden"
               >
@@ -36,7 +49,7 @@ export function Layout() {
               </motion.h1>
             )}
           </AnimatePresence>
-          <button 
+          <button
             onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
             className="p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors shrink-0"
           >
@@ -44,21 +57,24 @@ export function Layout() {
           </button>
         </div>
 
+        {/* Nav */}
         <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path || (location.pathname.startsWith('/exam') && item.path.startsWith('/exam'));
+            const isActive =
+              location.pathname === item.path ||
+              (location.pathname.startsWith('/exam') && item.path.startsWith('/exam'));
             const Icon = item.icon;
-            
+
             return (
               <Link
                 key={item.path}
                 to={item.path}
                 className={`flex items-center py-3 rounded-xl transition-all duration-200 relative ${
-                  isSidebarExpanded ? "px-4 gap-3" : "justify-center"
+                  isSidebarExpanded ? 'px-4 gap-3' : 'justify-center'
                 } ${
                   isActive
-                    ? "text-blue-400 font-medium"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+                    ? 'text-blue-400 font-medium'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
                 }`}
               >
                 {isActive && (
@@ -66,23 +82,52 @@ export function Layout() {
                     layoutId="active-nav"
                     className="absolute inset-0 bg-blue-500/10 border border-blue-500/20 rounded-xl"
                     initial={false}
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                   />
                 )}
                 <Icon size={20} className="relative z-10 shrink-0" />
-                <span className={`relative z-10 whitespace-nowrap overflow-hidden transition-opacity duration-200 ${isSidebarExpanded ? 'opacity-100 w-auto' : 'opacity-0 w-0'}`}>
+                <span
+                  className={`relative z-10 whitespace-nowrap overflow-hidden transition-opacity duration-200 ${
+                    isSidebarExpanded ? 'opacity-100 w-auto' : 'opacity-0 w-0'
+                  }`}
+                >
                   {item.name}
                 </span>
               </Link>
             );
           })}
         </nav>
-        
-        {isSidebarExpanded && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 border-t border-slate-800 text-xs text-slate-500 text-center whitespace-nowrap">
-            Dữ liệu lưu tại máy (Local)
-          </motion.div>
-        )}
+
+        {/* User + Sign Out */}
+        <div className={`p-4 border-t border-slate-800 ${isSidebarExpanded ? '' : 'flex justify-center'}`}>
+          {isSidebarExpanded ? (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+              <div className="flex items-center gap-3 px-2">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shrink-0">
+                  {user?.email?.[0]?.toUpperCase() ?? 'U'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-slate-300 truncate">{user?.email}</p>
+                  <p className="text-xs text-slate-600">Đã đăng nhập</p>
+                </div>
+              </div>
+              <button
+                onClick={handleSignOut}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+              >
+                <LogOut size={16} /> Đăng xuất
+              </button>
+            </motion.div>
+          ) : (
+            <button
+              onClick={handleSignOut}
+              title="Đăng xuất"
+              className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+            >
+              <LogOut size={20} />
+            </button>
+          )}
+        </div>
       </motion.aside>
 
       {/* Main Content */}

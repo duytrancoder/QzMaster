@@ -1,27 +1,45 @@
-import React, { useState, useMemo } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { useAppStore } from "../store";
-import { removeVietnameseTones } from "../utils";
-import { db } from "../../db";
-import { useLiveQuery } from "dexie-react-hooks";
-import { Search, Eye, BookOpen, AlertCircle } from "lucide-react";
+import React, { useState, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { useAppStore } from '../store';
+import { removeVietnameseTones } from '../utils';
+import { Search, Eye, BookOpen, AlertCircle } from 'lucide-react';
+import { Question } from '../types';
+import { toast } from 'sonner';
 
 export function Practice() {
   const { banks } = useAppStore();
-  const [selectedBankId, setSelectedBankId] = useState<string>(banks[0]?.id || "");
-  const [searchQuery, setSearchQuery] = useState("");
+  const { getQuestionsForBank } = useAppStore();
+  const [selectedBankId, setSelectedBankId] = useState<string>(banks[0]?.id || '');
+  const [searchQuery, setSearchQuery] = useState('');
   const [showAllAnswers, setShowAllAnswers] = useState(false);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
+
+  // Sync first bank
+  useEffect(() => {
+    if (banks.length > 0 && !selectedBankId) {
+      setSelectedBankId(banks[0].id);
+    }
+  }, [banks]);
+
+  // Load questions on bank change
+  useEffect(() => {
+    if (!selectedBankId) return;
+    setIsLoadingQuestions(true);
+    getQuestionsForBank(selectedBankId)
+      .then(setQuestions)
+      .catch(() => toast.error('Không thể tải câu hỏi'))
+      .finally(() => setIsLoadingQuestions(false));
+  }, [selectedBankId]);
 
   const selectedBank = banks.find((b) => b.id === selectedBankId);
-  const questions = useLiveQuery(() => selectedBankId ? db.questions.where('bankId').equals(selectedBankId).toArray() : [], [selectedBankId]) || [];
 
   const filteredQuestions = useMemo(() => {
     if (!selectedBank) return [];
     if (!searchQuery.trim()) return questions;
-
     const normalizedQuery = removeVietnameseTones(searchQuery);
     return questions.filter((q) => {
-      const matchText = removeVietnameseTones(q.content || q.text || "").includes(normalizedQuery);
+      const matchText = removeVietnameseTones(q.content || q.text || '').includes(normalizedQuery);
       const matchOpts = Object.values(q.options).some((opt) =>
         removeVietnameseTones(opt).includes(normalizedQuery)
       );
@@ -31,11 +49,8 @@ export function Practice() {
 
   const highlightText = (text: string, query: string) => {
     if (!query.trim()) return text;
-    // This is a simplified highlighter. For exact match ignoring accents, it's complex to map back to original text indices.
-    // For now, we'll just return text if we don't want to implement a complex diff highlighter.
-    // Alternatively, a simple RegExp if we assume standard characters:
     try {
-      const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, "gi");
+      const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
       const parts = text.split(regex);
       return parts.map((part, i) =>
         regex.test(part) ? (
@@ -74,14 +89,12 @@ export function Practice() {
             onChange={(e) => {
               setSelectedBankId(e.target.value);
               setShowAllAnswers(false);
-              setSearchQuery("");
+              setSearchQuery('');
             }}
             className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none appearance-none"
           >
             {banks.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
+              <option key={b.id} value={b.id}>{b.name}</option>
             ))}
           </select>
 
@@ -100,17 +113,22 @@ export function Practice() {
           <button
             onClick={() => setShowAllAnswers(!showAllAnswers)}
             className={`w-full sm:w-auto px-4 py-2.5 rounded-lg border flex items-center justify-center gap-2 text-sm font-medium transition-colors ${
-              showAllAnswers 
-                ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" 
-                : "bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20 hover:bg-blue-500"
+              showAllAnswers
+                ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
+                : 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20 hover:bg-blue-500'
             }`}
           >
-            <Eye size={16} /> {showAllAnswers ? "Ẩn đáp án toàn bộ" : "Xem đáp án toàn bộ"}
+            <Eye size={16} /> {showAllAnswers ? 'Ẩn đáp án toàn bộ' : 'Xem đáp án toàn bộ'}
           </button>
         </div>
       </header>
 
-      {questions.length === 0 ? (
+      {isLoadingQuestions ? (
+        <div className="text-center py-12 text-slate-500 space-y-3">
+          <div className="w-8 h-8 border-2 border-slate-700 border-t-blue-500 rounded-full animate-spin mx-auto" />
+          <p>Đang tải câu hỏi...</p>
+        </div>
+      ) : questions.length === 0 ? (
         <div className="text-center py-12 text-slate-500 flex flex-col items-center">
           <AlertCircle size={32} className="mb-2 opacity-50 text-amber-500" />
           <p>Kho này chưa có câu hỏi nào.</p>
@@ -134,25 +152,25 @@ export function Practice() {
                 <div className="flex justify-between items-start gap-4 mb-4">
                   <h3 className="text-slate-200 font-medium leading-relaxed">
                     <span className="text-blue-400 font-bold mr-2">Câu {idx + 1}:</span>
-                    {highlightText(q.content || q.text || "", searchQuery)}
+                    {highlightText(q.content || q.text || '', searchQuery)}
                   </h3>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {(["A", "B", "C", "D"] as const).map((opt) => {
+                  {(['A', 'B', 'C', 'D'] as const).map((opt) => {
                     const isCorrect = (q.correctAnswer || q.correct) === opt;
                     const showAsCorrect = isRevealed && isCorrect;
-                    
+
                     return (
                       <div
                         key={opt}
                         className={`p-3 rounded-lg border transition-all ${
                           showAsCorrect
-                            ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-100 shadow-[0_0_15px_rgba(16,185,129,0.1)] ring-1 ring-emerald-500/50"
-                            : "bg-slate-950 border-slate-800 text-slate-400 opacity-80"
-                        } ${isRevealed && !isCorrect ? "opacity-30 grayscale" : ""}`}
+                            ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-100 shadow-[0_0_15px_rgba(16,185,129,0.1)] ring-1 ring-emerald-500/50'
+                            : 'bg-slate-950 border-slate-800 text-slate-400 opacity-80'
+                        } ${isRevealed && !isCorrect ? 'opacity-30 grayscale' : ''}`}
                       >
-                        <span className={`font-bold mr-2 ${showAsCorrect ? "text-emerald-400" : "text-slate-500"}`}>
+                        <span className={`font-bold mr-2 ${showAsCorrect ? 'text-emerald-400' : 'text-slate-500'}`}>
                           {opt}.
                         </span>
                         {highlightText(q.options[opt], searchQuery)}

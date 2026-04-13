@@ -1,59 +1,72 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
-import { motion, AnimatePresence } from "motion/react";
-import { useAppStore } from "../store";
-import { generateId } from "../utils";
-import { db } from "../../db";
-import { useLiveQuery } from "dexie-react-hooks";
-import { Play, Settings2, Clock, CheckCircle2, ChevronRight, Hash } from "lucide-react";
-import { toast } from "sonner";
-import { Question } from "../types";
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
+import { motion, AnimatePresence } from 'motion/react';
+import { useAppStore } from '../store';
+import { generateId } from '../utils';
+import { Play, Settings2, Clock, CheckCircle2, ChevronRight, Hash } from 'lucide-react';
+import { toast } from 'sonner';
+import { Question } from '../types';
 
 export function ExamConfig() {
   const navigate = useNavigate();
-  const { banks, setActiveExam } = useAppStore();
+  const { banks, setActiveExam, getQuestionsForBank, isLoadingBanks } = useAppStore();
 
-  const [selectedBankId, setSelectedBankId] = useState<string>(banks[0]?.id || "");
-  const [mode, setMode] = useState<"random" | "all" | "specific">("random");
+  const [selectedBankId, setSelectedBankId] = useState<string>(banks[0]?.id || '');
+  const [mode, setMode] = useState<'random' | 'all' | 'specific'>('random');
   const [randomCount, setRandomCount] = useState<number>(10);
-  const [timeLimit, setTimeLimit] = useState<number>(30); // 30 minutes
+  const [timeLimit, setTimeLimit] = useState<number>(30);
   const [selectedQuestions, setSelectedQuestions] = useState<Set<string>>(new Set());
 
-  const selectedBank = banks.find((b) => b.id === selectedBankId);
-  const questions = useLiveQuery(() => selectedBankId ? db.questions.where('bankId').equals(selectedBankId).toArray() : [], [selectedBankId]) || [];
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
 
+  const selectedBank = banks.find((b) => b.id === selectedBankId);
+
+  // Sync first bank when banks list loaded
   useEffect(() => {
-    if (selectedBank) {
-      setRandomCount(Math.min(10, questions.length));
-      setSelectedQuestions(new Set());
+    if (banks.length > 0 && !selectedBankId) {
+      setSelectedBankId(banks[0].id);
     }
-  }, [selectedBankId, questions.length]);
+  }, [banks]);
+
+  // Load questions when bank changes
+  useEffect(() => {
+    if (!selectedBankId) return;
+    setIsLoadingQuestions(true);
+    getQuestionsForBank(selectedBankId)
+      .then((qs) => {
+        setQuestions(qs);
+        setRandomCount(Math.min(10, qs.length));
+        setSelectedQuestions(new Set());
+      })
+      .catch(() => toast.error('Không thể tải câu hỏi'))
+      .finally(() => setIsLoadingQuestions(false));
+  }, [selectedBankId]);
 
   const handleStart = () => {
     if (!selectedBank) return;
 
     let finalQuestions: Question[] = [];
 
-    if (mode === "all") {
+    if (mode === 'all') {
       finalQuestions = [...questions];
-    } else if (mode === "random") {
+    } else if (mode === 'random') {
       if (randomCount > questions.length || randomCount <= 0) {
         toast.error(`Số lượng không hợp lệ. Tối đa là ${questions.length}.`);
         return;
       }
-      // Shuffle array
       const shuffled = [...questions].sort(() => 0.5 - Math.random());
       finalQuestions = shuffled.slice(0, randomCount);
     } else {
       if (selectedQuestions.size === 0) {
-        toast.error("Vui lòng chọn ít nhất 1 câu hỏi.");
+        toast.error('Vui lòng chọn ít nhất 1 câu hỏi.');
         return;
       }
       finalQuestions = questions.filter((q) => selectedQuestions.has(q.id));
     }
 
     if (finalQuestions.length === 0) {
-      toast.error("Kho dữ liệu trống. Không thể tạo bài thi.");
+      toast.error('Kho dữ liệu trống. Không thể tạo bài thi.');
       return;
     }
 
@@ -68,8 +81,17 @@ export function ExamConfig() {
       answers: {},
     });
 
-    navigate("/exam/play");
+    navigate('/exam/play');
   };
+
+  if (isLoadingBanks) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-slate-500 gap-4">
+        <div className="w-8 h-8 border-2 border-slate-700 border-t-blue-500 rounded-full animate-spin" />
+        <p>Đang tải dữ liệu...</p>
+      </div>
+    );
+  }
 
   if (banks.length === 0) {
     return (
@@ -99,11 +121,15 @@ export function ExamConfig() {
             className="w-full bg-slate-950 border border-slate-700 text-slate-200 text-base rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-4 outline-none appearance-none transition-shadow cursor-pointer hover:border-slate-600"
           >
             {banks.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
+              <option key={b.id} value={b.id}>{b.name}</option>
             ))}
           </select>
+          {isLoadingQuestions && (
+            <p className="text-xs text-slate-500 flex items-center gap-2">
+              <span className="inline-block w-3 h-3 border border-slate-600 border-t-blue-500 rounded-full animate-spin" />
+              Đang tải câu hỏi...
+            </p>
+          )}
         </section>
 
         {/* Chế độ */}
@@ -113,17 +139,17 @@ export function ExamConfig() {
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[
-              { id: "random", label: "Ngẫu nhiên" },
-              { id: "all", label: "Tất cả" },
-              { id: "specific", label: "Chọn tay" },
+              { id: 'random', label: 'Ngẫu nhiên' },
+              { id: 'all', label: 'Tất cả' },
+              { id: 'specific', label: 'Chọn tay' },
             ].map((m) => (
               <button
                 key={m.id}
-                onClick={() => setMode(m.id as any)}
+                onClick={() => setMode(m.id as typeof mode)}
                 className={`p-4 rounded-xl border text-center transition-all ${
                   mode === m.id
-                    ? "bg-indigo-600/20 border-indigo-500 text-indigo-200 shadow-[0_0_15px_rgba(99,102,241,0.2)]"
-                    : "bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-300"
+                    ? 'bg-indigo-600/20 border-indigo-500 text-indigo-200 shadow-[0_0_15px_rgba(99,102,241,0.2)]'
+                    : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-300'
                 }`}
               >
                 {m.label}
@@ -132,8 +158,8 @@ export function ExamConfig() {
           </div>
 
           <AnimatePresence mode="wait">
-            {mode === "random" && (
-              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="pt-2">
+            {mode === 'random' && (
+              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="pt-2">
                 <div className="flex items-center gap-4 bg-slate-950 p-4 rounded-xl border border-slate-800">
                   <Hash className="text-slate-500" size={20} />
                   <div className="flex-1">
@@ -154,8 +180,8 @@ export function ExamConfig() {
               </motion.div>
             )}
 
-            {mode === "specific" && selectedBank && (
-              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="pt-2 overflow-hidden">
+            {mode === 'specific' && selectedBank && (
+              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="pt-2 overflow-hidden">
                 <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 max-h-[300px] overflow-y-auto space-y-2 custom-scrollbar">
                   <div className="flex justify-between items-center mb-4 sticky top-0 bg-slate-950/90 backdrop-blur pb-2 z-10 border-b border-slate-800">
                     <span className="text-sm font-medium text-slate-300">Đã chọn: {selectedQuestions.size}</span>
@@ -169,7 +195,7 @@ export function ExamConfig() {
                       }
                       className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
                     >
-                      {selectedQuestions.size === questions.length ? "Bỏ chọn tất cả" : "Chọn tất cả"}
+                      {selectedQuestions.size === questions.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
                     </button>
                   </div>
                   {questions.map((q, i) => (
@@ -183,7 +209,7 @@ export function ExamConfig() {
                           else newSet.delete(q.id);
                           setSelectedQuestions(newSet);
                         }}
-                        className="mt-1 w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 bg-slate-900 border-slate-700 cursor-pointer accent-indigo-500"
+                        className="mt-1 w-4 h-4 rounded text-indigo-600 bg-slate-900 border-slate-700 cursor-pointer accent-indigo-500"
                       />
                       <span className="text-sm text-slate-300 group-hover:text-slate-100 line-clamp-2">
                         <span className="text-slate-500 mr-2">#{i + 1}</span>
@@ -212,7 +238,7 @@ export function ExamConfig() {
               placeholder="0"
             />
             <div className="text-xs text-slate-500 bg-slate-900 px-3 py-1 rounded-full border border-slate-800 whitespace-nowrap">
-              {timeLimit === 0 ? "Không giới hạn" : `${timeLimit} phút`}
+              {timeLimit === 0 ? 'Không giới hạn' : `${timeLimit} phút`}
             </div>
           </div>
           <p className="text-xs text-slate-500 italic">Nhập 0 để làm bài không tính thời gian.</p>
@@ -222,7 +248,8 @@ export function ExamConfig() {
         <div className="pt-6 border-t border-slate-800">
           <button
             onClick={handleStart}
-            className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-lg py-4 rounded-xl transition-all shadow-[0_0_30px_rgba(79,70,229,0.3)] hover:shadow-[0_0_40px_rgba(79,70,229,0.5)] transform hover:-translate-y-1"
+            disabled={isLoadingQuestions || questions.length === 0}
+            className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-lg py-4 rounded-xl transition-all shadow-[0_0_30px_rgba(79,70,229,0.3)] hover:shadow-[0_0_40px_rgba(79,70,229,0.5)] transform hover:-translate-y-1"
           >
             Bắt đầu thi <Play fill="currentColor" size={20} />
           </button>

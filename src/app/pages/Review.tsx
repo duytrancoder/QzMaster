@@ -7,10 +7,20 @@ import { CheckCircle2, XCircle, ArrowLeft, Trophy, Clock, History as HistoryIcon
 
 export function Review() {
   const { id } = useParams<{ id: string }>();
-  const { history } = useAppStore();
+  const { history, isLoadingHistory } = useAppStore();
   const [filter, setFilter] = useState<"all" | "correct" | "incorrect">("all");
 
   const exam = history.find((h) => h.id === id);
+
+  // Đang load dữ liệu từ Supabase
+  if (isLoadingHistory) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-slate-500 gap-4">
+        <div className="w-8 h-8 border-2 border-slate-700 border-t-blue-500 rounded-full animate-spin" />
+        <p>Đang tải kết quả...</p>
+      </div>
+    );
+  }
 
   if (!exam) {
     return (
@@ -24,15 +34,14 @@ export function Review() {
     );
   }
 
-  const scorePercentage = (exam.score / exam.total) * 100;
+  const safeTotal = exam.total > 0 ? exam.total : exam.questions.length;
+  const safeScore = Math.max(0, Math.min(exam.score, safeTotal || exam.score));
+  const scorePercentage = safeTotal > 0 ? (safeScore / safeTotal) * 100 : 0;
   let scoreColor = "text-emerald-400";
-  let scoreBg = "bg-emerald-500/10";
   if (scorePercentage < 50) {
     scoreColor = "text-red-400";
-    scoreBg = "bg-red-500/10";
   } else if (scorePercentage < 80) {
     scoreColor = "text-amber-400";
-    scoreBg = "bg-amber-500/10";
   }
 
   return (
@@ -49,7 +58,7 @@ export function Review() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-900/40 p-4 rounded-2xl border border-slate-800 backdrop-blur-sm">
           <div className="flex flex-col items-center justify-center px-4">
             <span className="text-xs text-slate-500 flex items-center gap-1"><Trophy size={14} /> Điểm số</span>
-            <span className={`text-2xl font-bold mt-1 ${scoreColor}`}>{exam.score}/{exam.total}</span>
+            <span className={`text-2xl font-bold mt-1 ${scoreColor}`}>{safeScore}/{safeTotal}</span>
           </div>
           <div className="flex flex-col items-center justify-center px-4 border-l border-slate-800">
             <span className="text-xs text-slate-500 flex items-center gap-1"><Clock size={14} /> Thời gian</span>

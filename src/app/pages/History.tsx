@@ -3,11 +3,10 @@ import { Link } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { useAppStore } from "../store";
 import { formatTime } from "../utils";
-import { History as HistoryIcon, Clock, Award, Trash2, Search, ArrowRight } from "lucide-react";
-import { toast } from "sonner";
+import { History as HistoryIcon, Clock, Award, Search, ArrowRight } from "lucide-react";
 
 export function History() {
-  const { history, saveHistory } = useAppStore(); // Need to implement deleteHistory if I want, or just filter it. 
+  const { history } = useAppStore(); // Need to implement deleteHistory if I want, or just filter it. 
   // Wait, I didn't add deleteHistory to store. I'll just omit deletion for now or implement a quick local state filter.
   // Actually, let's keep it simple: just list.
 
@@ -55,7 +54,9 @@ export function History() {
         <div className="grid grid-cols-1 gap-4">
           <AnimatePresence>
             {filteredHistory.map((item, index) => {
-              const scorePercentage = (item.score / item.total) * 100;
+              const safeTotal = item.total > 0 ? item.total : item.questions.length;
+              const safeScore = Math.max(0, Math.min(item.score, safeTotal || item.score));
+              const scorePercentage = safeTotal > 0 ? (safeScore / safeTotal) * 100 : 0;
               let scoreColor = "text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
               if (scorePercentage < 50) scoreColor = "text-red-400 bg-red-500/10 border-red-500/20";
               else if (scorePercentage < 80) scoreColor = "text-amber-400 bg-amber-500/10 border-amber-500/20";
@@ -88,7 +89,7 @@ export function History() {
 
                   <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
                     <div className={`px-4 py-2 rounded-lg border ${scoreColor} flex flex-col items-center justify-center min-w-[80px]`}>
-                      <span className="text-xl font-bold">{item.score}/{item.total}</span>
+                      <span className="text-xl font-bold">{safeScore}/{safeTotal}</span>
                     </div>
                     
                     <Link
