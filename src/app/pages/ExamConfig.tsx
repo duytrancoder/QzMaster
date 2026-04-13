@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAppStore } from '../store';
 import { generateId } from '../utils';
-import { Play, Settings2, Clock, CheckCircle2, ChevronRight, Hash } from 'lucide-react';
+import { Play, Settings2, Clock, CheckCircle2, Hash } from 'lucide-react';
 import { toast } from 'sonner';
 import { Question } from '../types';
 
@@ -21,9 +21,10 @@ export function ExamConfig() {
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
 
   const selectedBank = banks.find((b) => b.id === selectedBankId);
-  const getBankOptionLabel = (bankName: string, isShared?: boolean) => {
-    return `${bankName} ${isShared ? '[Shared]' : '[Owner]'}`;
-  };
+  const getBankOptionLabel = (bankName: string) => bankName;
+  const selectedBankBadgeClass = selectedBank?.isShared
+    ? 'bg-amber-500/10 border-amber-500/20 text-amber-300'
+    : 'bg-blue-500/10 border-blue-500/20 text-blue-300';
 
   // Sync first bank when banks list loaded
   useEffect(() => {
@@ -118,15 +119,24 @@ export function ExamConfig() {
           <label className="text-sm font-semibold text-blue-400 flex items-center gap-2">
             <CheckCircle2 size={16} /> Chọn Kho Ôn Tập
           </label>
-          <select
-            value={selectedBankId}
-            onChange={(e) => setSelectedBankId(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-700 text-slate-200 text-base rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-4 outline-none appearance-none transition-shadow cursor-pointer hover:border-slate-600"
-          >
-            {banks.map((b) => (
-              <option key={b.id} value={b.id}>{getBankOptionLabel(b.name, b.isShared)}</option>
-            ))}
-          </select>
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedBankId}
+              onChange={(e) => setSelectedBankId(e.target.value)}
+              className="flex-1 bg-slate-950 border border-slate-700 text-slate-200 text-base rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-4 outline-none appearance-none transition-shadow cursor-pointer hover:border-slate-600"
+            >
+              {banks.map((b) => (
+                <option key={b.id} value={b.id}>{getBankOptionLabel(b.name)}</option>
+              ))}
+            </select>
+
+            {selectedBank ? (
+              <span className={`text-xs px-3 py-2 rounded-lg border whitespace-nowrap ${selectedBankBadgeClass}`}>
+                {selectedBank.isShared ? 'Shared' : 'Owner'}
+              </span>
+            ) : null}
+          </div>
+
           {isLoadingQuestions && (
             <p className="text-xs text-slate-500 flex items-center gap-2">
               <span className="inline-block w-3 h-3 border border-slate-600 border-t-blue-500 rounded-full animate-spin" />

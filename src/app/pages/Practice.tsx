@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { useAppStore } from '../store';
 import { removeVietnameseTones } from '../utils';
 import { Search, Eye, BookOpen, AlertCircle } from 'lucide-react';
@@ -33,9 +33,11 @@ export function Practice() {
   }, [selectedBankId]);
 
   const selectedBank = banks.find((b) => b.id === selectedBankId);
-  const getBankOptionLabel = (bankName: string, isShared?: boolean) => {
-    return `${bankName} ${isShared ? '[Shared]' : '[Owner]'}`;
-  };
+  const getBankOptionLabel = (bankName: string) => bankName;
+
+  const selectedBankBadgeClass = selectedBank?.isShared
+    ? 'bg-amber-500/10 border-amber-500/20 text-amber-300'
+    : 'bg-blue-500/10 border-blue-500/20 text-blue-300';
 
   const filteredQuestions = useMemo(() => {
     if (!selectedBank) return [];
@@ -87,19 +89,27 @@ export function Practice() {
         </div>
 
         <div className="flex-1 max-w-sm w-full space-y-3">
-          <select
-            value={selectedBankId}
-            onChange={(e) => {
-              setSelectedBankId(e.target.value);
-              setShowAllAnswers(false);
-              setSearchQuery('');
-            }}
-            className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none appearance-none"
-          >
-            {banks.map((b) => (
-              <option key={b.id} value={b.id}>{getBankOptionLabel(b.name, b.isShared)}</option>
-            ))}
-          </select>
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedBankId}
+              onChange={(e) => {
+                setSelectedBankId(e.target.value);
+                setShowAllAnswers(false);
+                setSearchQuery('');
+              }}
+              className="flex-1 bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none appearance-none"
+            >
+              {banks.map((b) => (
+                <option key={b.id} value={b.id}>{getBankOptionLabel(b.name)}</option>
+              ))}
+            </select>
+
+            {selectedBank ? (
+              <span className={`text-xs px-2.5 py-2 rounded-lg border whitespace-nowrap ${selectedBankBadgeClass}`}>
+                {selectedBank.isShared ? 'Shared' : 'Owner'}
+              </span>
+            ) : null}
+          </div>
 
           <div className="relative">
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
