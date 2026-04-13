@@ -3,18 +3,22 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useAppStore } from '../store';
 import { generateId } from '../utils';
 import { Bank, Question } from '../types';
-import { Plus, Upload, Trash2, ChevronDown, ChevronUp, Save } from 'lucide-react';
+import { Plus, Upload, Trash2, ChevronDown, ChevronUp, Save, Copy, Link as LinkIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '../../context/AuthContext';
 
 // ─── Banks Page ───────────────────────────────────────────────────────────────
 
 export function Banks() {
-  const { banks, addBank, deleteBank, updateBank, importBanks, isLoadingBanks } = useAppStore();
+  const { banks, addBank, deleteBank, updateBank, importBanks, getOrCreateShareCode, joinByCode, leaveSharedBank, isLoadingBanks } = useAppStore();
+  const { user } = useAuth();
   const [editingBankId, setEditingBankId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [newBankName, setNewBankName] = useState('');
   const [showNameInput, setShowNameInput] = useState(false);
+  const [shareCodeInput, setShareCodeInput] = useState('');
+  const [isJoiningByCode, setIsJoiningByCode] = useState(false);
 
   const handleCreateBank = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +30,7 @@ export function Banks() {
       setNewBankName('');
       setShowNameInput(false);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = err instanceof Error ? err.message : 'Tạo kho thất bại';
       console.error('[handleCreateBank]', err);
       toast.error(`Tạo kho thất bại: ${msg}`);
     } finally {
@@ -34,26 +38,61 @@ export function Banks() {
     }
   };
 
-  const handleImportJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImportJSON = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      try {
-        const json = JSON.parse(event.target?.result as string);
-        if (json && Array.isArray(json.banks)) {
-          await importBanks(json.banks);
-          toast.success('Nhập dữ liệu thành công!');
-        } else {
-          toast.error("File JSON không đúng định dạng. Cần có mảng 'banks'.");
-        }
-      } catch {
-        toast.error('Lỗi đọc file JSON.');
+    try {
+      const rawText = await file.text();
+      const json = JSON.parse(rawText);
+      if (json && Array.isArray(json.banks)) {
+        await importBanks(json.banks);
+        toast.success('Nhập dữ liệu thành công!');
+      } else {
+        toast.error("File JSON không đúng định dạng. Cần có mảng 'banks'.");
       }
-    };
-    reader.readAsText(file);
+    } catch {
+      toast.error('Lỗi đọc file JSON.');
+    }
+
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const copyToClipboard = async (text: string) => {
+    await navigator.clipboard.writeText(text);
+  };
+
+  const handleShareCode = async (bankId: string) => {
+    try {
+      const { code, created } = await getOrCreateShareCode(bankId);
+      await copyToClipboard(code);
+      toast.success(created ? 'Đã tạo mã' : 'Đã copy mã chia sẻ');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Không thể tạo mã chia sẻ';
+      toast.error(msg);
+    }
+  };
+
+  const handleJoinByCode = async () => {
+    const normalizedCode = shareCodeInput.trim().toUpperCase();
+    if (normalizedCode.length !== 6) {
+      toast.error('Mã chia sẻ phải gồm 6 ký tự.');
+      return;
+    }
+
+    setIsJoiningByCode(true);
+    try {
+      const joinedBank = await joinByCode(normalizedCode);
+      toast.success(`Đã gia nhập kho: ${joinedBank.name}`);
+      setShareCodeInput('');
+      setEditingBankId(null);
+      window.setTimeout(() => setEditingBankId(joinedBank.id), 0);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Không thể gia nhập bằng mã chia sẻ.';
+      toast.error(msg);
+    } finally {
+      setIsJoiningByCode(false);
+    }
   };
 
   return (
@@ -65,6 +104,22 @@ export function Banks() {
           <p className="text-slate-400 mt-1">Quản lý các bộ câu hỏi của bạn</p>
         </div>
         <div className="flex gap-3">
+          <div className="flex items-center gap-2 bg-slate-900/70 border border-slate-700 rounded-lg px-2 py-1">
+            <input
+              value={shareCodeInput}
+              onChange={(e) => setShareCodeInput(e.target.value.toUpperCase())}
+              maxLength={6}
+              placeholder="Nhập mã"
+              className="w-28 bg-transparent text-slate-200 text-sm outline-none placeholder:text-slate-500 uppercase tracking-wider"
+            />
+            <button
+              onClick={handleJoinByCode}
+              disabled={isJoiningByCode || shareCodeInput.trim().length !== 6}
+              className="px-3 py-1.5 text-sm rounded-md bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white"
+            >
+              {isJoiningByCode ? 'Đang vào...' : 'Nhập mã'}
+            </button>
+          </div>
           <input type="file" accept=".json" className="hidden" ref={fileInputRef} onChange={handleImportJSON} />
           <button
             onClick={() => fileInputRef.current?.click()}
@@ -138,8 +193,22 @@ export function Banks() {
               <BankCard
                 key={bank.id}
                 bank={bank}
+                isOwner={bank.ownerId === user?.id}
                 isEditing={editingBankId === bank.id}
                 setEditing={(isEdit) => setEditingBankId(isEdit ? bank.id : null)}
+                onShareCode={() => handleShareCode(bank.id)}
+                onLeave={async () => {
+                  if (!confirm('Bạn có muốn rời kho được chia sẻ này không?')) return;
+                  try {
+                    await leaveSharedBank(bank.id);
+                    if (editingBankId === bank.id) {
+                      setEditingBankId(null);
+                    }
+                    toast.success('Đã rời kho.');
+                  } catch {
+                    toast.error('Không thể rời kho lúc này.');
+                  }
+                }}
                 onDelete={async () => {
                   if (confirm('Bạn có chắc chắn muốn xóa kho này và toàn bộ câu hỏi?')) {
                     try {
@@ -164,14 +233,20 @@ export function Banks() {
 
 function BankCard({
   bank,
+  isOwner,
   isEditing,
   setEditing,
+  onShareCode,
+  onLeave,
   onDelete,
   onUpdate,
 }: {
   bank: Bank;
+  isOwner: boolean;
   isEditing: boolean;
   setEditing: (val: boolean) => void;
+  onShareCode: () => void;
+  onLeave: () => void;
   onDelete: () => void;
   onUpdate: (bank: Bank) => Promise<void>;
 }) {
@@ -189,7 +264,7 @@ function BankCard({
         .catch(() => toast.error('Không thể tải câu hỏi'))
         .finally(() => setIsLoadingQuestions(false));
     }
-  }, [isEditing, bank.id]);
+  }, [isEditing, bank.id, getQuestionsForBank]);
 
   const handleDeleteQuestion = async (qId: string) => {
     if (!confirm('Xóa câu hỏi này?')) return;
@@ -216,16 +291,48 @@ function BankCard({
       >
         <div>
           <h3 className="text-lg font-semibold text-slate-200">{bank.name}</h3>
-          <p className="text-sm text-slate-400 mt-1">{isEditing ? `${questions.length} câu hỏi` : 'Nhấn để mở rộng'}</p>
+          <p className="text-sm text-slate-400 mt-1">
+            {isEditing ? `${questions.length} câu hỏi` : 'Nhấn để mở rộng'}
+            {!isOwner ? ' • Chỉ đọc' : ''}
+          </p>
+          {bank.shareCode ? <p className="text-xs text-indigo-400 mt-1">Mã chia sẻ: {bank.shareCode}</p> : null}
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            className="p-2 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-colors"
-            title="Xóa kho"
-          >
-            <Trash2 size={18} />
-          </button>
+          {isOwner ? (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onShareCode();
+                }}
+                className="p-2 text-slate-500 hover:text-indigo-400 hover:bg-slate-800 rounded-lg transition-colors"
+                title="Tạo/copy mã chia sẻ"
+              >
+                {bank.shareCode ? <Copy size={18} /> : <LinkIcon size={18} />}
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
+                className="p-2 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-colors"
+                title="Xóa kho"
+              >
+                <Trash2 size={18} />
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onLeave();
+              }}
+              className="p-2 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-colors"
+              title="Rời kho"
+            >
+              <Trash2 size={18} />
+            </button>
+          )}
           <div className="p-2 text-slate-400">
             {isEditing ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
           </div>
@@ -243,15 +350,17 @@ function BankCard({
             <div className="p-5 space-y-4">
               <div className="flex justify-between items-center">
                 <h4 className="font-medium text-slate-300">Danh sách câu hỏi</h4>
-                <button
-                  onClick={() => setShowAddQuestion(!showAddQuestion)}
-                  className="text-sm bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 px-3 py-1.5 rounded-md flex items-center gap-1 transition-colors"
-                >
-                  <Plus size={16} /> Thêm câu hỏi
-                </button>
+                {isOwner ? (
+                  <button
+                    onClick={() => setShowAddQuestion(!showAddQuestion)}
+                    className="text-sm bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 px-3 py-1.5 rounded-md flex items-center gap-1 transition-colors"
+                  >
+                    <Plus size={16} /> Thêm câu hỏi
+                  </button>
+                ) : null}
               </div>
 
-              {showAddQuestion && (
+              {showAddQuestion && isOwner && (
                 <AddQuestionForm
                   onAdd={async (q) => {
                     try {
@@ -281,12 +390,14 @@ function BankCard({
                         <p className="text-slate-200 font-medium text-sm">
                           <span className="text-slate-500 mr-2">#{idx + 1}</span> {q.content || q.text}
                         </p>
-                        <button
-                          onClick={() => handleDeleteQuestion(q.id)}
-                          className="text-slate-500 hover:text-red-400 transition-colors ml-2 shrink-0"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        {isOwner ? (
+                          <button
+                            onClick={() => handleDeleteQuestion(q.id)}
+                            className="text-slate-500 hover:text-red-400 transition-colors ml-2 shrink-0"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        ) : null}
                       </div>
                       <div className="grid grid-cols-2 gap-2 mt-3">
                         {(['A', 'B', 'C', 'D'] as const).map((opt) => (

@@ -15,6 +15,15 @@ export interface Question {
 export interface Bank {
   id: string;
   name: string;
+  ownerId?: string;
+  shareCode?: string | null;
+  isShared?: boolean;
+}
+
+export interface DashboardStats {
+  totalBanks: number;
+  totalQuestions: number;
+  totalExams: number;
 }
 
 export interface ExamHistory {

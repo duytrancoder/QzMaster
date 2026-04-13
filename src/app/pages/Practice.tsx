@@ -33,6 +33,9 @@ export function Practice() {
   }, [selectedBankId]);
 
   const selectedBank = banks.find((b) => b.id === selectedBankId);
+  const getBankOptionLabel = (bankName: string, isShared?: boolean) => {
+    return `${bankName} ${isShared ? '[Shared]' : '[Owner]'}`;
+  };
 
   const filteredQuestions = useMemo(() => {
     if (!selectedBank) return [];
@@ -94,7 +97,7 @@ export function Practice() {
             className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none appearance-none"
           >
             {banks.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
+              <option key={b.id} value={b.id}>{getBankOptionLabel(b.name, b.isShared)}</option>
             ))}
           </select>
 

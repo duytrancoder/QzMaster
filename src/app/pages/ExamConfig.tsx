@@ -21,6 +21,9 @@ export function ExamConfig() {
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
 
   const selectedBank = banks.find((b) => b.id === selectedBankId);
+  const getBankOptionLabel = (bankName: string, isShared?: boolean) => {
+    return `${bankName} ${isShared ? '[Shared]' : '[Owner]'}`;
+  };
 
   // Sync first bank when banks list loaded
   useEffect(() => {
@@ -121,7 +124,7 @@ export function ExamConfig() {
             className="w-full bg-slate-950 border border-slate-700 text-slate-200 text-base rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-4 outline-none appearance-none transition-shadow cursor-pointer hover:border-slate-600"
           >
             {banks.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
+              <option key={b.id} value={b.id}>{getBankOptionLabel(b.name, b.isShared)}</option>
             ))}
           </select>
           {isLoadingQuestions && (

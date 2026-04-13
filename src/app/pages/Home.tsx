@@ -1,141 +1,184 @@
-import React from 'react';
-import { Link } from 'react-router';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
+import { toast } from 'sonner';
 import { useAppStore } from '../store';
-import { BookOpen, Database, PlayCircle } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Input } from '../components/ui/input';
+import { Button } from '../components/ui/button';
+import { BookOpen, Database, History as HistoryIcon } from 'lucide-react';
 
 export function Home() {
-  const { banks, history, isLoadingBanks } = useAppStore();
+  const navigate = useNavigate();
+  const {
+    dashboardStats,
+    recentActivities,
+    isLoadingDashboard,
+    joinByCode,
+    fetchDashboardStats,
+  } = useAppStore();
 
-  // Total questions is no longer available client-side without a fetch.
-  // We'll show bank count and history count instead.
-  const totalExams = history.length;
-  const getSafeExamMetrics = (entry: { score: number; total: number; questions: Array<unknown> }) => {
-    const safeTotal = entry.total > 0 ? entry.total : entry.questions.length;
-    const safeScore = Math.max(0, Math.min(entry.score, safeTotal || entry.score));
-    const safeRatio = safeTotal > 0 ? safeScore / safeTotal : 0;
-    return { safeTotal, safeScore, safeRatio };
+  const [shareCodeInput, setShareCodeInput] = useState('');
+  const [isJoining, setIsJoining] = useState(false);
+
+  useEffect(() => {
+    fetchDashboardStats();
+  }, [fetchDashboardStats]);
+
+  const handleJoinByCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const normalizedCode = shareCodeInput.trim().toUpperCase();
+    if (normalizedCode.length !== 6) {
+      toast.error('Mã chia sẻ phải gồm 6 ký tự.');
+      return;
+    }
+
+    setIsJoining(true);
+    try {
+      const joinedBank = await joinByCode(normalizedCode);
+      toast.success(`Đã gia nhập kho: ${joinedBank.name}`);
+      setShareCodeInput('');
+      navigate('/practice');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Không thể gia nhập bằng mã chia sẻ.';
+      toast.error(msg);
+    } finally {
+      setIsJoining(false);
+    }
   };
-
-  const stats = [
-    { label: 'Tổng số kho', value: banks.length, icon: Database, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-    { label: 'Đã làm bài', value: totalExams, icon: PlayCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-    {
-      label: 'Điểm TB',
-      value:
-        history.length > 0
-          ? `${Math.round((history.reduce((acc, h) => acc + getSafeExamMetrics(h).safeRatio * 100, 0) / history.length))}%`
-          : '—',
-      icon: BookOpen,
-      color: 'text-indigo-400',
-      bg: 'bg-indigo-500/10',
-    },
-  ];
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="space-y-8 max-w-5xl mx-auto"
+      className="max-w-6xl mx-auto space-y-6"
     >
-      <header className="mb-8">
+      <header>
         <h1 className="text-3xl font-bold text-slate-100">Tổng quan hệ thống</h1>
-        <p className="text-slate-400 mt-2">Theo dõi tiến độ học tập và ôn luyện của bạn.</p>
+        <p className="text-slate-400 mt-1">Theo dõi dữ liệu học tập và gia nhập kho bằng mã chia sẻ.</p>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {stats.map((stat, idx) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: idx * 0.1 }}
-            className="p-6 rounded-2xl border border-slate-800 bg-slate-900/40 backdrop-blur-sm flex items-center gap-4"
-          >
-            <div className={`p-4 rounded-xl ${stat.bg} ${stat.color}`}>
-              <stat.icon size={24} />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-400">{stat.label}</p>
-              {isLoadingBanks ? (
-                <div className="w-10 h-6 bg-slate-800 rounded animate-pulse mt-1" />
-              ) : (
-                <h3 className="text-2xl font-bold text-slate-100 mt-1">{stat.value}</h3>
-              )}
-            </div>
-          </motion.div>
-        ))}
-      </div>
+      <Tabs defaultValue="dashboard" className="space-y-4">
+        <TabsList className="bg-slate-900 border border-slate-800">
+          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+          <TabsTrigger value="join">Nhập mã chia sẻ</TabsTrigger>
+        </TabsList>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-        <div className="p-6 rounded-2xl border border-slate-800 bg-slate-900/40">
-          <h3 className="text-xl font-semibold mb-4 text-slate-200">Gợi ý hôm nay</h3>
-          {banks.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-slate-500 mb-4">Bạn chưa có kho câu hỏi nào.</p>
-              <Link
-                to="/banks"
-                className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
-              >
-                Tạo kho mới
-              </Link>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <p className="text-slate-400 mb-4">Tiếp tục ôn luyện với các kho có sẵn.</p>
-              <Link
-                to="/practice"
-                className="block w-full text-center bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-6 py-3 rounded-lg transition-colors"
-              >
-                Vào Ôn Tập Tự Do
-              </Link>
-              <Link
-                to="/exam/config"
-                className="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors shadow-lg shadow-blue-500/20"
-              >
-                Bắt đầu Thi Thử
-              </Link>
-            </div>
-          )}
-        </div>
+        <TabsContent value="dashboard" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="bg-slate-900/50 border-slate-800">
+              <CardHeader className="space-y-1">
+                <CardDescription className="text-slate-400 flex items-center gap-2">
+                  <Database size={16} /> Tổng số kho
+                </CardDescription>
+                <CardTitle className="text-3xl text-slate-100">
+                  {isLoadingDashboard ? '...' : dashboardStats.totalBanks}
+                </CardTitle>
+              </CardHeader>
+            </Card>
 
-        <div className="p-6 rounded-2xl border border-slate-800 bg-slate-900/40">
-          <h3 className="text-xl font-semibold mb-4 text-slate-200">Hoạt động gần đây</h3>
-          {history.length === 0 ? (
-            <div className="text-center py-8 text-slate-500">Chưa có lịch sử làm bài.</div>
-          ) : (
-            <div className="space-y-3">
-              {history.slice(0, 4).map((h) => (
-                <div key={h.id} className="flex justify-between items-center p-3 rounded-lg bg-slate-800/50 border border-slate-800">
-                  <div>
-                    <p className="font-medium text-slate-200">{h.bankName}</p>
-                    <p className="text-xs text-slate-500">{new Date(h.date).toLocaleDateString('vi-VN')}</p>
-                  </div>
-                  <div className="text-right">
-                    {(() => {
-                      const { safeScore, safeTotal, safeRatio } = getSafeExamMetrics(h);
+            <Card className="bg-slate-900/50 border-slate-800">
+              <CardHeader className="space-y-1">
+                <CardDescription className="text-slate-400 flex items-center gap-2">
+                  <BookOpen size={16} /> Tổng câu hỏi
+                </CardDescription>
+                <CardTitle className="text-3xl text-slate-100">
+                  {isLoadingDashboard ? '...' : dashboardStats.totalQuestions}
+                </CardTitle>
+              </CardHeader>
+            </Card>
+
+            <Card className="bg-slate-900/50 border-slate-800">
+              <CardHeader className="space-y-1">
+                <CardDescription className="text-slate-400 flex items-center gap-2">
+                  <HistoryIcon size={16} /> Đã làm bài
+                </CardDescription>
+                <CardTitle className="text-3xl text-slate-100">
+                  {isLoadingDashboard ? '...' : dashboardStats.totalExams}
+                </CardTitle>
+              </CardHeader>
+            </Card>
+          </div>
+
+          <Card className="bg-slate-900/50 border-slate-800">
+            <CardHeader>
+              <CardTitle className="text-slate-100">Hoạt động gần đây</CardTitle>
+              <CardDescription className="text-slate-400">5 bài thi gần nhất của bạn</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-slate-800 hover:bg-transparent">
+                    <TableHead className="text-slate-400">Tên kho</TableHead>
+                    <TableHead className="text-slate-400">Số điểm</TableHead>
+                    <TableHead className="text-slate-400">Ngày thi</TableHead>
+                    <TableHead className="text-slate-400 text-right">Chi tiết</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoadingDashboard ? (
+                    <TableRow className="border-slate-800">
+                      <TableCell colSpan={4} className="text-center text-slate-500 py-6">
+                        Đang tải dữ liệu...
+                      </TableCell>
+                    </TableRow>
+                  ) : recentActivities.length === 0 ? (
+                    <TableRow className="border-slate-800">
+                      <TableCell colSpan={4} className="text-center text-slate-500 py-6">
+                        Chưa có lịch sử làm bài.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    recentActivities.map((exam) => {
+                      const safeTotal = exam.total > 0 ? exam.total : exam.questions.length;
+                      const safeScore = Math.max(0, Math.min(exam.score, safeTotal || exam.score));
                       return (
-                        <span
-                          className={`font-bold ${
-                            safeRatio >= 0.8
-                              ? 'text-emerald-400'
-                              : safeRatio >= 0.5
-                              ? 'text-yellow-400'
-                              : 'text-red-400'
-                          }`}
-                        >
-                          {safeScore}/{safeTotal}
-                        </span>
+                        <TableRow key={exam.id} className="border-slate-800">
+                          <TableCell className="text-slate-200">{exam.bankName}</TableCell>
+                          <TableCell className="text-slate-300">{safeScore}/{safeTotal}</TableCell>
+                          <TableCell className="text-slate-400">{new Date(exam.date).toLocaleString('vi-VN')}</TableCell>
+                          <TableCell className="text-right">
+                            <Button asChild size="sm" variant="outline" className="border-slate-700">
+                              <Link to={`/review/${exam.id}`}>Xem chi tiết</Link>
+                            </Button>
+                          </TableCell>
+                        </TableRow>
                       );
-                    })()}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="join">
+          <Card className="bg-slate-900/50 border-slate-800 max-w-xl">
+            <CardHeader>
+              <CardTitle className="text-slate-100">Nhập mã gia nhập</CardTitle>
+              <CardDescription className="text-slate-400">
+                Nhập mã 6 ký tự để xem và thi thử trên kho được chia sẻ.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleJoinByCode} className="space-y-3">
+                <Input
+                  value={shareCodeInput}
+                  onChange={(e) => setShareCodeInput(e.target.value.toUpperCase())}
+                  placeholder="Ví dụ: X9K2M1"
+                  maxLength={6}
+                  className="uppercase tracking-widest text-center text-lg"
+                />
+                <Button type="submit" disabled={isJoining || shareCodeInput.trim().length !== 6} className="w-full">
+                  {isJoining ? 'Đang kiểm tra...' : 'Gia nhập bằng mã'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </motion.div>
   );
 }
