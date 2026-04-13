@@ -15,6 +15,7 @@ export function Banks() {
   const [isCreating, setIsCreating] = useState(false);
   const [newBankName, setNewBankName] = useState('');
   const [showNameInput, setShowNameInput] = useState(false);
+  const [showJoinInput, setShowJoinInput] = useState(false);
   const [shareCodeInput, setShareCodeInput] = useState('');
   const [isJoiningByCode, setIsJoiningByCode] = useState(false);
 
@@ -72,6 +73,7 @@ export function Banks() {
       const joinedBank = await joinByCode(normalizedCode);
       toast.success(`Đã gia nhập kho: ${joinedBank.name}`);
       setShareCodeInput('');
+      setShowJoinInput(false);
       navigate(`/banks/${joinedBank.id}`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Không thể gia nhập bằng mã chia sẻ.';
@@ -101,22 +103,12 @@ export function Banks() {
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <div className="flex items-center gap-2 bg-slate-900/70 border border-slate-700 rounded-lg px-2 py-1">
-            <input
-              value={shareCodeInput}
-              onChange={(e) => setShareCodeInput(e.target.value.toUpperCase())}
-              maxLength={6}
-              placeholder="Nhập mã"
-              className="w-28 bg-transparent text-slate-200 text-sm outline-none placeholder:text-slate-500 uppercase tracking-wider"
-            />
-            <button
-              onClick={handleJoinByCode}
-              disabled={isJoiningByCode || shareCodeInput.trim().length !== 6}
-              className="px-3 py-1.5 text-sm rounded-md bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white"
-            >
-              {isJoiningByCode ? 'Đang vào...' : 'Nhập mã'}
-            </button>
-          </div>
+          <button
+            onClick={() => setShowNameInput(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-lg shadow-blue-500/20"
+          >
+            <Plus size={18} /> Tạo kho mới
+          </button>
 
           <input type="file" accept=".json" className="hidden" ref={fileInputRef} onChange={handleImportJSON} />
           <button
@@ -125,11 +117,12 @@ export function Banks() {
           >
             <Upload size={18} /> Nhập JSON
           </button>
+
           <button
-            onClick={() => setShowNameInput(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-lg shadow-blue-500/20"
+            onClick={() => setShowJoinInput((prev) => !prev)}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors"
           >
-            <Plus size={18} /> Tạo kho mới
+            Mã vào kho
           </button>
         </div>
       </div>
@@ -161,6 +154,39 @@ export function Banks() {
             Hủy
           </button>
         </form>
+      ) : null}
+
+      {showJoinInput ? (
+        <div className="bg-slate-900/70 border border-slate-700 rounded-xl p-4 space-y-3">
+          <p className="text-sm text-slate-300">Nhập mã kho để vào kho được chia sẻ</p>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <input
+              autoFocus
+              value={shareCodeInput}
+              onChange={(e) => setShareCodeInput(e.target.value.toUpperCase())}
+              maxLength={6}
+              placeholder="Ví dụ: A1B2C3"
+              className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-slate-200 text-sm outline-none placeholder:text-slate-500 uppercase tracking-wider"
+            />
+            <button
+              onClick={handleJoinByCode}
+              disabled={isJoiningByCode || shareCodeInput.trim().length !== 6}
+              className="px-4 py-2 text-sm rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white"
+            >
+              {isJoiningByCode ? 'Đang vào...' : 'Vào kho'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowJoinInput(false);
+                setShareCodeInput('');
+              }}
+              className="px-4 py-2 text-sm rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
+            >
+              Hủy
+            </button>
+          </div>
+        </div>
       ) : null}
 
       {isLoadingBanks ? (
