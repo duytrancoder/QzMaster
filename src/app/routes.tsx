@@ -3,6 +3,7 @@ import { createBrowserRouter } from "react-router";
 import { Layout } from "./components/Layout";
 import { Home } from "./pages/Home";
 import { Banks } from "./pages/Banks";
+import { BankConfig } from "./pages/BankConfig";
 import { Practice } from "./pages/Practice";
 import { ExamConfig } from "./pages/ExamConfig";
 import { ExamPlay } from "./pages/ExamPlay";
@@ -16,6 +17,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, Component: Home },
       { path: "banks", Component: Banks },
+      { path: "banks/:bankId", Component: BankConfig },
       { path: "practice", Component: Practice },
       { path: "exam/config", Component: ExamConfig },
       { path: "exam/play", Component: ExamPlay },

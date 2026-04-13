@@ -112,60 +112,17 @@ function createShareCode(): string {
 }
 
 async function fetchQuestionsByBankIdVariants(bankId: string): Promise<Array<Record<string, unknown>>> {
-  const { data: bySnakeCase, error: bySnakeCaseErr } = await supabase
+  const { data, error } = await supabase
     .from('questions')
     .select('*')
     .eq('bank_id', bankId)
     .order('created_at', { ascending: true });
 
-  if (!bySnakeCaseErr && bySnakeCase && bySnakeCase.length > 0) {
-    return bySnakeCase as Array<Record<string, unknown>>;
+  if (error) {
+    throw error;
   }
 
-  const snakeCaseMissing =
-    !!bySnakeCaseErr && /Could not find the 'bank_id' column/i.test(bySnakeCaseErr.message);
-  const shouldTryCamelCase = snakeCaseMissing || !bySnakeCaseErr;
-
-  if (shouldTryCamelCase) {
-    const { data: byCamelCase, error: byCamelCaseErr } = await supabase
-      .from('questions')
-      .select('*')
-      .eq('bankId', bankId)
-      .order('created_at', { ascending: true });
-
-    if (!byCamelCaseErr && byCamelCase && byCamelCase.length > 0) {
-      return byCamelCase as Array<Record<string, unknown>>;
-    }
-
-    if (!bySnakeCaseErr && !byCamelCaseErr) {
-      return [];
-    }
-
-    if (bySnakeCaseErr && /Could not find the 'bank_id' column/i.test(bySnakeCaseErr.message) && byCamelCaseErr) {
-      throw byCamelCaseErr;
-    }
-  }
-
-  if (bySnakeCaseErr) {
-    const snakeCaseMissing = /Could not find the 'bank_id' column/i.test(bySnakeCaseErr.message);
-    if (!snakeCaseMissing) {
-      throw bySnakeCaseErr;
-    }
-  }
-
-  const { data: allRows, error: allRowsErr } = await supabase
-    .from('questions')
-    .select('*');
-
-  if (allRowsErr) {
-    throw allRowsErr;
-  }
-
-  const allQuestionRows = (allRows ?? []) as Array<Record<string, unknown>>;
-  return allQuestionRows.filter((row) => {
-    const rowBankId = toSafeText(row.bank_id ?? row.bankId, '');
-    return rowBankId === bankId;
-  });
+  return (data ?? []) as Array<Record<string, unknown>>;
 }
 
 function mapQuestionRow(row: Record<string, unknown>): Question {
@@ -189,6 +146,23 @@ function mapQuestionRow(row: Record<string, unknown>): Question {
     correctAnswer: correct,
     correct,
   };
+}
+
+function createQuestionInsertPayloadVariants(
+  bankId: string,
+  question: Question
+): Array<Record<string, unknown>> {
+  const content = question.content ?? question.text ?? '';
+  const correctAnswer = question.correctAnswer ?? question.correct;
+
+  return [
+    {
+      bank_id: bankId,
+      content,
+      options: question.options,
+      correct_answer: correctAnswer,
+    },
+  ];
 }
 
 // ─── Provider ────────────────────────────────────────────────────────────────
@@ -424,17 +398,58 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // ── Question CRUD ─────────────────────────────────────────────────────────
 
   const addQuestionToBank = async (bankId: string, question: Question) => {
-    // Không tự cấp id — để Supabase auto-generate
-    const { error } = await supabase.from('questions').insert({
-      bank_id: bankId,
-      content: question.content ?? question.text ?? '',
-      options: question.options, // JSONB
-      correct_answer: question.correctAnswer ?? question.correct,
-    });
-    if (error) {
-      console.error('[addQuestionToBank] Supabase error:', error.message, error.details, error.hint);
-      throw error;
+    const userId = await getCurrentUserId();
+
+    const { data: bankRow, error: bankErr } = await supabase
+      .from('banks')
+      .select('owner_id')
+      .eq('id', bankId)
+      .maybeSingle();
+
+    if (bankErr) {
+      throw bankErr;
     }
+
+    if (!bankRow || (bankRow as { owner_id?: string }).owner_id !== userId) {
+      throw new Error('Bạn không có quyền thêm câu hỏi vào kho này.');
+    }
+
+    const payloadVariants = createQuestionInsertPayloadVariants(bankId, question);
+    let lastError: { message?: string; details?: string; hint?: string } | null = null;
+
+    for (const basePayload of payloadVariants) {
+      const payload = { ...basePayload };
+
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        const { error } = await supabase.from('questions').insert(payload);
+
+        if (!error) {
+          return;
+        }
+
+        lastError = error;
+        console.error('[addQuestionToBank] Supabase error:', error.message, error.details, error.hint);
+
+        const missingColumnMatch = /Could not find the '([^']+)' column/i.exec(error.message);
+        const missingColumn = missingColumnMatch?.[1];
+
+        if (missingColumn && Object.hasOwn(payload, missingColumn)) {
+          delete payload[missingColumn];
+          continue;
+        }
+
+        break;
+      }
+    }
+
+    if (lastError?.message && /row-level security policy/i.test(lastError.message)) {
+      throw new Error(
+        "RLS đang chặn INSERT vào bảng questions. Cần tạo policy cho phép chủ sở hữu bank thêm câu hỏi bằng bank_id."
+      );
+    }
+
+    const detailText = lastError ? [lastError.message, lastError.details, lastError.hint].filter(Boolean).join(' | ') : '';
+    throw new Error(detailText || 'Không thể thêm câu hỏi.');
   };
 
   const deleteQuestion = async (questionId: string) => {
@@ -712,14 +727,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (bankErr) continue;
 
         if (b.questions && b.questions.length > 0) {
-          const qRows = b.questions.map((q) => ({
-            id: q.id ?? generateId(),
-            bank_id: b.id,
-            content: q.content ?? q.text ?? '',
-            options: q.options,
-            correct_answer: q.correctAnswer ?? q.correct,
-          }));
-          await supabase.from('questions').insert(qRows);
+          for (const question of b.questions) {
+            await addQuestionToBank(b.id, {
+              ...question,
+              id: question.id ?? generateId(),
+            });
+          }
         }
       }
     }

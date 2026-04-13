@@ -1,0 +1,329 @@
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router';
+import { motion } from 'motion/react';
+import { ArrowLeft, Copy, Link as LinkIcon, Plus, Save, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { useAuth } from '../../context/AuthContext';
+import { useAppStore } from '../store';
+import { generateId } from '../utils';
+import { Question } from '../types';
+
+export function BankConfig() {
+  const navigate = useNavigate();
+  const { bankId } = useParams<{ bankId: string }>();
+  const { user } = useAuth();
+  const { banks, getOrCreateShareCode, leaveSharedBank, deleteBank, isLoadingBanks } = useAppStore();
+
+  const bank = banks.find((item) => item.id === bankId);
+  const isOwner = bank?.ownerId === user?.id;
+
+  const copyToClipboard = async (text: string) => {
+    await navigator.clipboard.writeText(text);
+  };
+
+  const handleShareCode = async () => {
+    if (!bank) return;
+    try {
+      const { code, created } = await getOrCreateShareCode(bank.id);
+      await copyToClipboard(code);
+      toast.success(created ? 'Đã tạo mã' : 'Đã copy mã chia sẻ');
+    } catch {
+      toast.error('Không thể tạo mã chia sẻ');
+    }
+  };
+
+  const handleDeleteBank = async () => {
+    if (!bank) return;
+    if (!confirm('Bạn có chắc chắn muốn xóa kho này và toàn bộ câu hỏi?')) return;
+    try {
+      await deleteBank(bank.id);
+      toast.success('Đã xóa kho');
+      navigate('/banks');
+    } catch {
+      toast.error('Xóa kho thất bại');
+    }
+  };
+
+  const handleLeaveBank = async () => {
+    if (!bank) return;
+    if (!confirm('Bạn có muốn rời kho được chia sẻ này không?')) return;
+    try {
+      await leaveSharedBank(bank.id);
+      toast.success('Đã rời kho.');
+      navigate('/banks');
+    } catch {
+      toast.error('Rời kho thất bại');
+    }
+  };
+
+  if (isLoadingBanks) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-slate-500 gap-4">
+        <div className="w-8 h-8 border-2 border-slate-700 border-t-blue-500 rounded-full animate-spin" />
+        <p>Đang tải dữ liệu...</p>
+      </div>
+    );
+  }
+
+  if (!bank) {
+    return (
+      <div className="max-w-3xl mx-auto text-center py-16 space-y-4">
+        <p className="text-slate-400">Không tìm thấy kho này hoặc bạn chưa gia nhập kho đó.</p>
+        <Link to="/banks" className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors">
+          <ArrowLeft size={16} /> Quay lại Kho ôn tập
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="max-w-5xl mx-auto space-y-6 pb-10">
+      <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-800 pb-5">
+        <div>
+          <Link to="/banks" className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200 transition-colors mb-3">
+            <ArrowLeft size={16} /> Quay lại danh sách kho
+          </Link>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-3xl font-bold text-slate-100">{bank.name}</h1>
+            <span className={`text-xs px-2 py-1 rounded-full border ${isOwner ? 'bg-blue-500/10 border-blue-500/20 text-blue-300' : 'bg-amber-500/10 border-amber-500/20 text-amber-300'}`}>
+              {isOwner ? 'Owner' : 'Shared'}
+            </span>
+          </div>
+          <p className="text-slate-400 mt-2">Màn cấu hình kho. Chỉ chủ kho mới được thêm/xóa câu hỏi, tạo mã và xóa kho.</p>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          {isOwner ? (
+            <>
+              <button
+                onClick={handleShareCode}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors"
+              >
+                {bank.shareCode ? <Copy size={16} /> : <LinkIcon size={16} />}
+                {bank.shareCode ? 'Copy mã' : 'Tạo mã chia sẻ'}
+              </button>
+              <button
+                onClick={handleDeleteBank}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white transition-colors"
+              >
+                <Trash2 size={16} /> Xóa kho
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={handleLeaveBank}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white transition-colors"
+            >
+              <Trash2 size={16} /> Rời kho
+            </button>
+          )}
+        </div>
+      </header>
+
+      {bank.shareCode ? <p className="text-sm text-indigo-300">Mã chia sẻ hiện tại: {bank.shareCode}</p> : null}
+
+      <QuestionsSection bankId={bank.id} isOwner={isOwner} />
+    </motion.div>
+  );
+}
+
+function QuestionsSection({ bankId, isOwner }: Readonly<{ bankId: string; isOwner: boolean }>) {
+  const { getQuestionsForBank, addQuestionToBank, deleteQuestion } = useAppStore();
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
+  const [showAddQuestion, setShowAddQuestion] = useState(false);
+
+  useEffect(() => {
+    setIsLoadingQuestions(true);
+    getQuestionsForBank(bankId)
+      .then(setQuestions)
+      .catch(() => toast.error('Không thể tải câu hỏi'))
+      .finally(() => setIsLoadingQuestions(false));
+  }, [bankId, getQuestionsForBank]);
+
+  const handleDeleteQuestion = async (questionId: string) => {
+    if (!confirm('Xóa câu hỏi này?')) return;
+    try {
+      await deleteQuestion(questionId);
+      setQuestions((prev) => prev.filter((item) => item.id !== questionId));
+      toast.success('Đã xóa câu hỏi');
+    } catch {
+      toast.error('Xóa câu hỏi thất bại');
+    }
+  };
+
+  let content: React.ReactNode;
+  if (isLoadingQuestions) {
+    content = (
+      <div className="text-center py-10 text-slate-500 space-y-3">
+        <div className="w-7 h-7 border-2 border-slate-700 border-t-blue-500 rounded-full animate-spin mx-auto" />
+        <p>Đang tải câu hỏi...</p>
+      </div>
+    );
+  } else if (questions.length === 0) {
+    content = (
+      <div className="text-center py-10 text-slate-500 border border-dashed border-slate-800 rounded-xl">
+        Chưa có câu hỏi trong kho này.
+      </div>
+    );
+  } else {
+    content = (
+      <div className="space-y-3">
+        {questions.map((q, index) => (
+          <div key={q.id} className="p-4 rounded-xl border border-slate-800 bg-slate-950/70">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-sm text-slate-400 mb-1">Câu #{index + 1}</p>
+                <h3 className="text-slate-100 font-medium leading-relaxed">{q.content || q.text}</h3>
+              </div>
+              {isOwner ? (
+                <button
+                  onClick={() => void handleDeleteQuestion(q.id)}
+                  className="text-slate-500 hover:text-red-400 transition-colors shrink-0"
+                >
+                  <Trash2 size={16} />
+                </button>
+              ) : null}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+              {(['A', 'B', 'C', 'D'] as const).map((opt) => (
+                <div
+                  key={opt}
+                  className={`px-3 py-2 rounded-lg border text-sm ${
+                    (q.correctAnswer || q.correct) === opt
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                      : 'bg-slate-900/60 border-slate-800 text-slate-400'
+                  }`}
+                >
+                  <span className="font-bold mr-2">{opt}.</span>
+                  {q.options[opt]}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <section className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6 space-y-5 backdrop-blur-sm">
+      <div className="flex items-center justify-between gap-4">
+        <h2 className="text-xl font-semibold text-slate-100">Danh sách câu hỏi</h2>
+        {isOwner ? (
+          <button
+            onClick={() => setShowAddQuestion((prev) => !prev)}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 transition-colors"
+          >
+            <Plus size={16} /> Thêm câu hỏi
+          </button>
+        ) : null}
+      </div>
+
+      {isOwner && showAddQuestion ? (
+        <AddQuestionForm
+          onAdd={async (q) => {
+            try {
+              await addQuestionToBank(bankId, q);
+              setQuestions((prev) => [...prev, q]);
+              setShowAddQuestion(false);
+              toast.success('Đã thêm câu hỏi');
+            } catch (error) {
+              const message = error instanceof Error ? error.message : 'Thêm câu hỏi thất bại';
+              toast.error(message);
+            }
+          }}
+          onCancel={() => setShowAddQuestion(false)}
+        />
+      ) : null}
+
+      {content}
+    </section>
+  );
+}
+
+function AddQuestionForm({ onAdd, onCancel }: Readonly<{ onAdd: (q: Question) => Promise<void>; onCancel: () => void }>) {
+  const [content, setContent] = useState('');
+  const [options, setOptions] = useState({ A: '', B: '', C: '', D: '' });
+  const [correctAnswer, setCorrectAnswer] = useState<'A' | 'B' | 'C' | 'D'>('A');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!content || !options.A || !options.B || !options.C || !options.D) {
+      toast.error('Vui lòng điền đủ thông tin');
+      return;
+    }
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await onAdd({ id: generateId(), content, options, correctAnswer });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <motion.form
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      onSubmit={handleSubmit}
+      className="p-4 bg-slate-950 border border-slate-800 rounded-lg space-y-4"
+    >
+      <div>
+        <label htmlFor="bank-question-content" className="block text-xs font-medium text-slate-400 mb-1">Câu hỏi</label>
+        <textarea
+          id="bank-question-content"
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          className="w-full bg-slate-900 border border-slate-700 rounded-md p-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          rows={3}
+          placeholder="Nhập nội dung câu hỏi..."
+          required
+        />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {(['A', 'B', 'C', 'D'] as const).map((opt) => (
+          <div key={opt} className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCorrectAnswer(opt)}
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors ${
+                correctAnswer === opt ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+              }`}
+            >
+              {opt}
+            </button>
+            <input
+              type="text"
+              value={options[opt]}
+              onChange={(e) => setOptions((prev) => ({ ...prev, [opt]: e.target.value }))}
+              placeholder={`Đáp án ${opt}`}
+              className="flex-1 bg-slate-900 border border-slate-700 rounded-md p-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
+              required
+            />
+          </div>
+        ))}
+      </div>
+
+      <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-md transition-colors"
+        >
+          Hủy
+        </button>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-md transition-colors flex items-center gap-2"
+        >
+          <Save size={16} /> {isSubmitting ? 'Đang lưu...' : 'Lưu câu hỏi'}
+        </button>
+      </div>
+    </motion.form>
+  );
+}
