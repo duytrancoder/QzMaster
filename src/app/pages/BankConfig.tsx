@@ -1,13 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { motion } from 'motion/react';
-import { ArrowLeft, Copy, Loader2, Link as LinkIcon, Plus, Save, Trash2, Upload } from 'lucide-react';
+import { ArrowLeft, CircleHelp, Copy, Loader2, Link as LinkIcon, Plus, Save, Trash2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
 import { useAppStore } from '../store';
 import { generateId } from '../utils';
 import { Question } from '../types';
 import { Button } from '../components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 
 export function BankConfig() {
   const navigate = useNavigate();
@@ -257,6 +258,71 @@ function QuestionsSection({ bankId, isOwner }: Readonly<{ bankId: string; isOwne
             >
               {isImporting ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />} Nhập JSON
             </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="text-slate-400 hover:text-slate-200"
+                  aria-label="Trợ giúp nhập JSON"
+                >
+                  <CircleHelp size={18} />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-[min(92vw,560px)] space-y-3">
+                <p className="text-sm font-semibold">Hướng dẫn nạp câu hỏi bằng file JSON</p>
+                <p className="text-sm text-muted-foreground">
+                  Chức năng này giúp bạn thêm hàng loạt câu hỏi cùng lúc (thay vì nhập từng câu).
+                </p>
+
+                <p className="text-sm">
+                  <strong>1. Cấu trúc file bắt buộc:</strong>
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  File phải là mảng JSON chứa các object với đúng 3 khóa: <code>content</code>, <code>options</code>, <code>correct_answer</code>.
+                </p>
+
+                <p className="text-sm">
+                  <strong>2. Mẫu chuẩn (Copy để test):</strong>
+                </p>
+                <pre className="bg-muted p-2 rounded-md text-xs overflow-x-auto">{`[
+  {
+    "content": "Câu hỏi của bạn ở đây?",
+    "options": {
+      "A": "Đáp án A",
+      "B": "Đáp án B",
+      "C": "Đáp án C",
+      "D": "Đáp án D"
+    },
+    "correct_answer": "B"
+  }
+]`}</pre>
+
+                <p className="text-sm">
+                  <strong>3. Các lưu ý sống còn:</strong>
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  - Tên các khóa (content, options, correct_answer) phải viết chính xác tuyệt đối, không viết hoa thường sai.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  - Trong <code>options</code> bắt buộc phải có đủ 4 chữ cái: "A", "B", "C", "D".
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  - <code>correct_answer</code> chỉ được nhận một trong 4 giá trị: "A", "B", "C" hoặc "D".
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  - Tuyệt đối không thêm các khóa khác (như <code>id</code>, <code>bank_id</code>, <code>question</code>) vì hệ thống sẽ tự tạo.
+                </p>
+
+                <p className="text-sm">
+                  <strong>4. Mẹo tạo file nhanh:</strong>
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Bạn có thể mở ChatGPT và yêu cầu: <strong>"Tạo ra 50 câu hỏi trắc nghiệm về [Chủ đề], trả lời ĐÚNG ĐỊNH DẠNG JSON chuẩn theo cấu trúc tôi cung cấp"</strong>, sau đó copy kết quả lưu thành file <code>.json</code> là có thể Import ngay.
+                </p>
+              </PopoverContent>
+            </Popover>
             <button
               onClick={() => setShowAddQuestion((prev) => !prev)}
               className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 transition-colors"
