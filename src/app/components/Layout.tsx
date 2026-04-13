@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
 import { BookOpen, Edit3, History, Home, PlayCircle, Menu, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -16,7 +16,21 @@ const navItems = [
 export function Layout() {
   const location = useLocation();
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(true);
   const { user, signOut } = useAuth();
+
+  useEffect(() => {
+    const savedMode = localStorage.getItem('qzmaster-theme');
+    const shouldUseDark = savedMode ? savedMode === 'dark' : true;
+    setIsDarkMode(shouldUseDark);
+    document.documentElement.classList.toggle('dark', shouldUseDark);
+  }, []);
+
+  const handleThemeToggle = (checked: boolean) => {
+    setIsDarkMode(checked);
+    document.documentElement.classList.toggle('dark', checked);
+    localStorage.setItem('qzmaster-theme', checked ? 'dark' : 'light');
+  };
 
   const handleSignOut = async () => {
     try {
@@ -111,6 +125,18 @@ export function Layout() {
                   <p className="text-xs text-slate-600">Đã đăng nhập</p>
                 </div>
               </div>
+              <div className="flex items-center justify-between px-2 py-1 rounded-lg bg-slate-800/50 border border-slate-700">
+                <span className="text-xs text-slate-300">Ngày / Đêm</span>
+                <input
+                  type="checkbox"
+                  role="switch"
+                  className="dark-2"
+                  checked={isDarkMode}
+                  onChange={(event) => handleThemeToggle(event.target.checked)}
+                  aria-label="Chuyển ngày đêm"
+                  title="Chuyển ngày đêm"
+                />
+              </div>
               <button
                 onClick={handleSignOut}
                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
@@ -119,13 +145,24 @@ export function Layout() {
               </button>
             </motion.div>
           ) : (
-            <button
-              onClick={handleSignOut}
-              title="Đăng xuất"
-              className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-            >
-              <LogOut size={20} />
-            </button>
+            <div className="flex flex-col items-center gap-3">
+              <input
+                type="checkbox"
+                role="switch"
+                className="dark-2"
+                checked={isDarkMode}
+                onChange={(event) => handleThemeToggle(event.target.checked)}
+                aria-label="Chuyển ngày đêm"
+                title="Chuyển ngày đêm"
+              />
+              <button
+                onClick={handleSignOut}
+                title="Đăng xuất"
+                className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+              >
+                <LogOut size={20} />
+              </button>
+            </div>
           )}
         </div>
       </motion.aside>
