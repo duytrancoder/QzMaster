@@ -5,16 +5,27 @@ import { useAppStore } from "../store";
 import { formatTime } from "../utils";
 import { History as HistoryIcon, Clock, Award, Search, ArrowRight } from "lucide-react";
 
+function toLocalDateKey(value: string): string {
+  const date = new Date(value);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export function History() {
   const { history } = useAppStore(); // Need to implement deleteHistory if I want, or just filter it. 
   // Wait, I didn't add deleteHistory to store. I'll just omit deletion for now or implement a quick local state filter.
   // Actually, let's keep it simple: just list.
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedDate, setSelectedDate] = useState("");
 
-  const filteredHistory = history.filter((h) =>
-    h.bankName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredHistory = history.filter((h) => {
+    const matchesSearch = h.bankName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDate = selectedDate ? toLocalDateKey(h.date) === selectedDate : true;
+    return matchesSearch && matchesDate;
+  });
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-6">
@@ -24,17 +35,35 @@ export function History() {
           <p className="text-sm text-slate-400 mt-1">Xem lại kết quả các bài thi trước</p>
         </div>
 
-        <div className="relative w-full sm:w-64">
-          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
-            <Search size={16} />
+        <div className="flex w-full sm:w-auto gap-3">
+          <div className="relative flex-1 sm:w-64">
+            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+              <Search size={16} />
+            </div>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="bg-slate-950 border border-slate-800 text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 outline-none transition-colors"
+              placeholder="Tìm theo tên kho..."
+            />
           </div>
           <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 outline-none transition-colors"
-            placeholder="Tìm theo tên kho..."
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="bg-slate-950 border border-slate-800 text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-44 p-2.5 outline-none transition-colors"
+            aria-label="Lọc theo ngày thi"
           />
+          {selectedDate ? (
+            <button
+              type="button"
+              onClick={() => setSelectedDate("")}
+              className="px-3 py-2.5 text-xs rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 transition-colors"
+            >
+              Xóa ngày
+            </button>
+          ) : null}
         </div>
       </header>
 
