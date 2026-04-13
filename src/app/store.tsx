@@ -23,6 +23,7 @@ interface AppContextType extends AppState {
   addQuestionToBank: (bankId: string, question: Question) => Promise<void>;
   deleteQuestion: (questionId: string) => Promise<void>;
   getQuestionsForBank: (bankId: string) => Promise<Question[]>;
+  importQuestions: (bankId: string, file: File) => Promise<{ importedCount: number; questions: Question[] }>;
   saveHistory: (history: Omit<ExamHistory, 'id'>) => Promise<string>; // returns the saved record id
   setActiveExam: (exam: ActiveExam | null) => void;
   importBanks: (newBanks: Array<{ id: string; name: string; questions?: Question[] }>) => Promise<void>;
@@ -39,6 +40,11 @@ interface AppContextType extends AppState {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const SHARE_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ0123456789';
+const IMPORT_OPTION_KEYS = ['A', 'B', 'C', 'D'] as const;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
 
 function toFiniteNumber(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
@@ -163,6 +169,62 @@ function createQuestionInsertPayloadVariants(
       correct_answer: correctAnswer,
     },
   ];
+}
+
+function validateImportedQuestionRow(row: unknown, index: number): string | null {
+  if (!isRecord(row)) {
+    return `Lỗi ở câu số ${index + 1}: Mỗi câu hỏi phải là một object hợp lệ.`;
+  }
+
+  const allowedQuestionKeys = ['content', 'options', 'correct_answer'];
+  const rowKeys = Object.keys(row);
+  if (rowKeys.length !== allowedQuestionKeys.length || !allowedQuestionKeys.every((key) => rowKeys.includes(key))) {
+    return `Lỗi ở câu số ${index + 1}: Mỗi câu chỉ được có content, options, correct_answer.`;
+  }
+
+  if (typeof row.content !== 'string' || row.content.trim().length === 0) {
+    return `Lỗi ở câu số ${index + 1}: Thiếu nội dung câu hỏi hoặc định dạng không đúng`;
+  }
+
+  if (!isRecord(row.options)) {
+    return `Lỗi ở câu số ${index + 1}: Thiếu options hoặc định dạng không đúng`;
+  }
+
+  const optionKeys = Object.keys(row.options);
+  if (optionKeys.length !== IMPORT_OPTION_KEYS.length || !IMPORT_OPTION_KEYS.every((key) => optionKeys.includes(key))) {
+    return `Lỗi ở câu số ${index + 1}: options phải chứa đủ A, B, C, D`;
+  }
+
+  for (const optionKey of IMPORT_OPTION_KEYS) {
+    if (typeof row.options[optionKey] !== 'string' || row.options[optionKey].trim().length === 0) {
+      return `Lỗi ở câu số ${index + 1}: Thiếu đáp án ${optionKey} hoặc định dạng không đúng`;
+    }
+  }
+
+  if (
+    typeof row.correct_answer !== 'string' ||
+    !IMPORT_OPTION_KEYS.includes(row.correct_answer.trim() as (typeof IMPORT_OPTION_KEYS)[number])
+  ) {
+    return `Lỗi ở câu số ${index + 1}: correct_answer phải là A, B, C hoặc D`;
+  }
+
+  return null;
+}
+
+function mapImportedQuestionRow(row: Record<string, unknown>, bankId: string): Record<string, unknown> {
+  const options = row.options as Record<string, unknown>;
+
+  return {
+    bank_id: bankId,
+    content: row.content,
+    options: {
+      A: options.A,
+      B: options.B,
+      C: options.C,
+      D: options.D,
+    },
+    correct_answer: row.correct_answer,
+  };
 }
 
 // ─── Provider ────────────────────────────────────────────────────────────────
@@ -467,6 +529,86 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return rows.map((row) => mapQuestionRow(row));
   };
 
+  const importQuestions = async (bankId: string, file: File): Promise<{ importedCount: number; questions: Question[] }> => {
+    const userId = await getCurrentUserId();
+
+    const { data: bankRow, error: bankErr } = await supabase
+      .from('banks')
+      .select('owner_id')
+      .eq('id', bankId)
+      .maybeSingle();
+
+    if (bankErr) {
+      throw bankErr;
+    }
+
+    if (!bankRow || (bankRow as { owner_id?: string }).owner_id !== userId) {
+      throw new Error('Bạn không có quyền nhập câu hỏi vào kho này.');
+    }
+
+    let rawText = '';
+    try {
+      rawText = await file.text();
+    } catch {
+      throw new Error('Không thể đọc file JSON.');
+    }
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(rawText);
+    } catch {
+      throw new Error('File JSON sai định dạng cú pháp, vui lòng kiểm tra lại.');
+    }
+
+    if (!Array.isArray(parsed)) {
+      throw new Error('File phải là một mảng JSON [...].');
+    }
+
+    if (parsed.length === 0) {
+      throw new Error('File JSON không chứa câu hỏi nào để nhập.');
+    }
+
+    const mappedData: Array<Record<string, unknown>> = [];
+
+    for (let index = 0; index < parsed.length; index += 1) {
+      const validationError = validateImportedQuestionRow(parsed[index], index);
+      if (validationError) {
+        throw new Error(validationError);
+      }
+
+      mappedData.push(mapImportedQuestionRow(parsed[index] as Record<string, unknown>, bankId));
+    }
+
+    const { data: insertedRows, error: insertErr } = await supabase
+      .from('questions')
+      .insert(mappedData)
+      .select('*');
+
+    if (insertErr) {
+      const detailText = [insertErr.message, insertErr.details, insertErr.hint].filter(Boolean).join(' | ');
+      throw new Error(detailText ? `Lỗi từ Database: ${detailText}` : 'Lỗi từ Database: Không thể nạp câu hỏi.');
+    }
+
+    let refreshedQuestions = (insertedRows ?? []).map((row) => mapQuestionRow(row as Record<string, unknown>));
+
+    if (refreshedQuestions.length === 0) {
+      const freshRows = await fetchQuestionsByBankIdVariants(bankId);
+      refreshedQuestions = freshRows.map((row) => mapQuestionRow(row));
+    }
+
+    setSharedQuestionsByBank((prev) => ({
+      ...prev,
+      [bankId]: refreshedQuestions,
+    }));
+
+    await fetchDashboardStats();
+
+    return {
+      importedCount: mappedData.length,
+      questions: refreshedQuestions,
+    };
+  };
+
   // ── Exam History ──────────────────────────────────────────────────────────
 
   const saveHistory = async (historyItem: Omit<ExamHistory, 'id'>): Promise<string> => {
@@ -764,6 +906,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         addQuestionToBank,
         deleteQuestion,
         getQuestionsForBank,
+        importQuestions,
         saveHistory,
         setActiveExam,
         importBanks,

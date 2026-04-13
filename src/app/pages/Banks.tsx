@@ -1,17 +1,15 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
-import { ChevronRight, Plus, Upload } from 'lucide-react';
+import { ChevronRight, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
 import { useAppStore } from '../store';
-import { Bank } from '../types';
 
 export function Banks() {
-  const { banks, addBank, importBanks, getOrCreateShareCode, joinByCode, isLoadingBanks } = useAppStore();
+  const { banks, addBank, getOrCreateShareCode, joinByCode, isLoadingBanks } = useAppStore();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [newBankName, setNewBankName] = useState('');
   const [showNameInput, setShowNameInput] = useState(false);
@@ -35,26 +33,6 @@ export function Banks() {
     } finally {
       setIsCreating(false);
     }
-  };
-
-  const handleImportJSON = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const rawText = await file.text();
-      const json = JSON.parse(rawText);
-      if (json && Array.isArray(json.banks)) {
-        await importBanks(json.banks);
-        toast.success('Nhập dữ liệu thành công!');
-      } else {
-        toast.error("File JSON không đúng định dạng. Cần có mảng 'banks'.");
-      }
-    } catch {
-      toast.error('Lỗi đọc file JSON.');
-    }
-
-    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const copyToClipboard = async (text: string) => {
@@ -108,14 +86,6 @@ export function Banks() {
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-lg shadow-blue-500/20"
           >
             <Plus size={18} /> Tạo kho mới
-          </button>
-
-          <input type="file" accept=".json" className="hidden" ref={fileInputRef} onChange={handleImportJSON} />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition-colors border border-slate-700"
-          >
-            <Upload size={18} /> Nhập JSON
           </button>
 
           <button

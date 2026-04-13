@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { motion } from 'motion/react';
-import { ArrowLeft, Copy, Link as LinkIcon, Plus, Save, Trash2 } from 'lucide-react';
+import { ArrowLeft, Copy, Loader2, Link as LinkIcon, Plus, Save, Trash2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
 import { useAppStore } from '../store';
 import { generateId } from '../utils';
 import { Question } from '../types';
+import { Button } from '../components/ui/button';
 
 export function BankConfig() {
   const navigate = useNavigate();
@@ -128,10 +129,12 @@ export function BankConfig() {
 }
 
 function QuestionsSection({ bankId, isOwner }: Readonly<{ bankId: string; isOwner: boolean }>) {
-  const { getQuestionsForBank, addQuestionToBank, deleteQuestion } = useAppStore();
+  const { getQuestionsForBank, addQuestionToBank, deleteQuestion, importQuestions } = useAppStore();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
   const [showAddQuestion, setShowAddQuestion] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setIsLoadingQuestions(true);
@@ -149,6 +152,31 @@ function QuestionsSection({ bankId, isOwner }: Readonly<{ bankId: string; isOwne
       toast.success('Đã xóa câu hỏi');
     } catch {
       toast.error('Xóa câu hỏi thất bại');
+    }
+  };
+
+  const handleOpenImportDialog = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImportJSON = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || isImporting) {
+      event.target.value = '';
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      const result = await importQuestions(bankId, file);
+      setQuestions(result.questions);
+      toast.success(`Đã nạp thành công ${result.importedCount} câu hỏi!`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Nhập JSON thất bại';
+      toast.error(message);
+    } finally {
+      setIsImporting(false);
+      event.target.value = '';
     }
   };
 
@@ -212,12 +240,30 @@ function QuestionsSection({ bankId, isOwner }: Readonly<{ bankId: string; isOwne
       <div className="flex items-center justify-between gap-4">
         <h2 className="text-xl font-semibold text-slate-100">Danh sách câu hỏi</h2>
         {isOwner ? (
-          <button
-            onClick={() => setShowAddQuestion((prev) => !prev)}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 transition-colors"
-          >
-            <Plus size={16} /> Thêm câu hỏi
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json,application/json"
+              className="hidden"
+              onChange={handleImportJSON}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleOpenImportDialog}
+              disabled={isImporting}
+              className="border-slate-700 bg-transparent text-slate-200 hover:bg-slate-800 hover:text-slate-50"
+            >
+              {isImporting ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />} Nhập JSON
+            </Button>
+            <button
+              onClick={() => setShowAddQuestion((prev) => !prev)}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 transition-colors"
+            >
+              <Plus size={16} /> Thêm câu hỏi
+            </button>
+          </div>
         ) : null}
       </div>
 
