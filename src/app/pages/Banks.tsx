@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
-import { ChevronRight, Plus } from 'lucide-react';
+import { ChevronRight, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
 import { useAppStore } from '../store';
+import { Bank } from '../types';
 
 export function Banks() {
-  const { banks, addBank, getOrCreateShareCode, joinByCode, isLoadingBanks } = useAppStore();
+  const { banks, addBank, deleteBank, getOrCreateShareCode, joinByCode, leaveSharedBank, isLoadingBanks } = useAppStore();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isCreating, setIsCreating] = useState(false);
@@ -68,6 +69,42 @@ export function Banks() {
       toast.success(created ? 'Đã tạo mã' : 'Đã copy mã chia sẻ');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Không thể tạo mã chia sẻ';
+      toast.error(msg);
+    }
+  };
+
+  const handleCopySharedCode = async (bank: Bank) => {
+    if (!bank.shareCode) {
+      toast.error('Kho này chưa có mã chia sẻ để copy.');
+      return;
+    }
+
+    try {
+      await copyToClipboard(bank.shareCode);
+      toast.success('Đã copy mã chia sẻ');
+    } catch {
+      toast.error('Không thể copy mã chia sẻ');
+    }
+  };
+
+  const handleDeleteBank = async (bankId: string) => {
+    if (!confirm('Bạn có chắc chắn muốn xóa kho này và toàn bộ câu hỏi?')) return;
+    try {
+      await deleteBank(bankId);
+      toast.success('Đã xóa kho');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Xóa kho thất bại';
+      toast.error(msg);
+    }
+  };
+
+  const handleLeaveSharedBank = async (bankId: string) => {
+    if (!confirm('Bạn có muốn rời kho được chia sẻ này không?')) return;
+    try {
+      await leaveSharedBank(bankId);
+      toast.success('Đã rời kho.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Rời kho thất bại';
       toast.error(msg);
     }
   };
@@ -183,6 +220,9 @@ export function Banks() {
               isOwner={bank.ownerId === user?.id}
               onClick={() => navigate(`/banks/${bank.id}`)}
               onShareCode={handleShareCode}
+              onCopySharedCode={handleCopySharedCode}
+              onDeleteBank={handleDeleteBank}
+              onLeaveSharedBank={handleLeaveSharedBank}
             />
           ))}
         </div>
@@ -196,11 +236,17 @@ function BankListItem({
   isOwner,
   onClick,
   onShareCode,
+  onCopySharedCode,
+  onDeleteBank,
+  onLeaveSharedBank,
 }: Readonly<{
   bank: Bank;
   isOwner: boolean;
   onClick: () => void;
   onShareCode: (bankId: string) => Promise<void>;
+  onCopySharedCode: (bank: Bank) => Promise<void>;
+  onDeleteBank: (bankId: string) => Promise<void>;
+  onLeaveSharedBank: (bankId: string) => Promise<void>;
 }>) {
   return (
     <div className="w-full group bg-slate-900/40 border border-slate-800 rounded-xl p-5 hover:bg-slate-900/70 hover:border-slate-700 transition-all flex items-center justify-between gap-4">
@@ -217,14 +263,44 @@ function BankListItem({
       </button>
 
       {isOwner ? (
-        <button
-          type="button"
-          onClick={() => onShareCode(bank.id)}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-600/10 text-indigo-300 hover:bg-indigo-600/20 transition-colors shrink-0"
-        >
-          {bank.shareCode ? 'Copy mã' : 'Tạo mã'}
-        </button>
-      ) : null}
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => onShareCode(bank.id)}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-600/10 text-indigo-300 hover:bg-indigo-600/20 transition-colors"
+          >
+            {bank.shareCode ? 'Copy mã' : 'Tạo mã'}
+          </button>
+          <button
+            type="button"
+            onClick={() => onDeleteBank(bank.id)}
+            className="w-9 h-9 inline-flex items-center justify-center rounded-lg border border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20 transition-colors"
+            title="Xóa kho"
+            aria-label="Xóa kho"
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => onCopySharedCode(bank)}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-600/10 text-indigo-300 hover:bg-indigo-600/20 transition-colors"
+          >
+            Copy mã
+          </button>
+          <button
+            type="button"
+            onClick={() => onLeaveSharedBank(bank.id)}
+            className="w-9 h-9 inline-flex items-center justify-center rounded-lg border border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20 transition-colors"
+            title="Rời kho"
+            aria-label="Rời kho"
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
+      )}
 
       <ChevronRight size={18} className="text-slate-500 group-hover:text-slate-200 transition-colors shrink-0" />
     </div>
