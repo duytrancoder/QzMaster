@@ -320,7 +320,7 @@ function QuestionsSection({ bankId, isOwner }: Readonly<{ bankId: string; isOwne
                   <strong>4. Mẹo tạo file nhanh:</strong>
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Bạn có thể mở ChatGPT và yêu cầu: <strong>"Tạo ra 50 câu hỏi trắc nghiệm về [Chủ đề], trả lời ĐÚNG ĐỊNH DẠNG JSON chuẩn theo cấu trúc tôi cung cấp"</strong>, sau đó copy kết quả lưu thành file <code>.json</code> là có thể Import ngay.
+                  Bạn có thể mở ChatAI và yêu cầu: <strong>"Tạo ra 50 câu hỏi trắc nghiệm về [Chủ đề], trả lời ĐÚNG ĐỊNH DẠNG JSON chuẩn theo cấu trúc tôi cung cấp"</strong> hoặc <strong>copy câu hỏi muốn thi và yêu cầu chatAI tạo file JSON</strong>, sau đó copy kết quả lưu thành file <code>.json</code> là có thể Import ngay.
                 </p>
               </PopoverContent>
               </Popover>
