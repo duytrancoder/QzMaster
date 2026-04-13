@@ -113,21 +113,21 @@ export function Banks() {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="max-w-5xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-100">Kho ôn tập</h1>
-          <p className="text-slate-400 mt-1">Chọn một kho để mở trang cấu hình riêng của kho đó</p>
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-100">Kho ôn tập</h1>
+          <p className="text-slate-400 mt-2">Chọn một kho để mở trang cấu hình riêng của kho đó</p>
         </div>
 
         <div className="flex flex-wrap gap-3">
           <button
             onClick={() => setShowNameInput(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-lg shadow-blue-500/20"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 font-medium"
           >
             <Plus size={18} /> Tạo kho mới
           </button>
 
           <button
             onClick={() => setShowJoinInput((prev) => !prev)}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors"
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 font-medium"
           >
             Mã vào kho
           </button>
@@ -141,12 +141,12 @@ export function Banks() {
             value={newBankName}
             onChange={(e) => setNewBankName(e.target.value)}
             placeholder="Nhập tên kho mới..."
-            className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-200 text-sm focus:outline-none focus:border-blue-500"
+            className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-200 text-sm focus:outline-none focus:border-blue-500 transition-colors duration-200"
           />
           <button
             type="submit"
             disabled={isCreating}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-lg text-sm font-medium transition-colors"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-lg text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow-md"
           >
             {isCreating ? 'Đang tạo...' : 'Tạo'}
           </button>
@@ -156,7 +156,7 @@ export function Banks() {
               setShowNameInput(false);
               setNewBankName('');
             }}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-sm transition-colors"
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-sm transition-colors duration-200"
           >
             Hủy
           </button>
@@ -164,8 +164,8 @@ export function Banks() {
       ) : null}
 
       {showJoinInput ? (
-        <div className="bg-slate-900/70 border border-slate-700 rounded-xl p-4 space-y-3">
-          <p className="text-sm text-slate-300">Nhập mã kho để vào kho được chia sẻ</p>
+        <div className="bg-slate-900/70 border border-slate-700 rounded-xl p-4 space-y-3 shadow-md hover:shadow-lg transition-all duration-200">
+          <p className="text-sm text-slate-300 font-medium">Nhập mã kho để vào kho được chia sẻ</p>
           <div className="flex flex-col sm:flex-row gap-3">
             <input
               autoFocus
@@ -173,12 +173,12 @@ export function Banks() {
               onChange={(e) => setShareCodeInput(e.target.value.toUpperCase())}
               maxLength={6}
               placeholder="Ví dụ: A1B2C3"
-              className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-slate-200 text-sm outline-none placeholder:text-slate-500 uppercase tracking-wider"
+              className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-slate-200 text-sm outline-none placeholder:text-slate-500 uppercase tracking-wider focus:border-indigo-500 transition-colors duration-200"
             />
             <button
               onClick={handleJoinByCode}
               disabled={isJoiningByCode || shareCodeInput.trim().length !== 6}
-              className="px-4 py-2 text-sm rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white"
+              className="px-4 py-2 text-sm rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium transition-all duration-200 shadow-sm hover:shadow-md"
             >
               {isJoiningByCode ? 'Đang vào...' : 'Vào kho'}
             </button>
@@ -188,7 +188,7 @@ export function Banks() {
                 setShowJoinInput(false);
                 setShareCodeInput('');
               }}
-              className="px-4 py-2 text-sm rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
+              className="px-4 py-2 text-sm rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors duration-200"
             >
               Hủy
             </button>
@@ -199,7 +199,7 @@ export function Banks() {
       {isLoadingBanks ? (
         <div className="text-center py-12 text-slate-500 space-y-2">
           <div className="w-8 h-8 border-2 border-slate-700 border-t-blue-500 rounded-full animate-spin mx-auto" />
-          <p>Đang tải dữ liệu...</p>
+          <p className="text-sm font-medium">Đang tải dữ liệu...</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -249,15 +249,15 @@ function BankListItem({
   onLeaveSharedBank: (bankId: string) => Promise<void>;
 }>) {
   return (
-    <div className="w-full group bg-slate-900/40 border border-slate-800 rounded-xl p-5 hover:bg-slate-900/70 hover:border-slate-700 transition-all flex items-center justify-between gap-4">
+    <div className="w-full group bg-slate-900/40 border border-slate-800 rounded-xl p-5 hover:bg-slate-900/70 hover:border-slate-700 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-between gap-4">
       <button type="button" onClick={onClick} className="text-left min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
-          <h3 className="text-lg font-semibold text-slate-100 truncate">{bank.name}</h3>
-          <span className={`text-xs px-2 py-1 rounded-full border ${isOwner ? 'bg-blue-500/10 border-blue-500/20 text-blue-300' : 'bg-amber-500/10 border-amber-500/20 text-amber-300'}`}>
+          <h3 className="text-lg font-semibold tracking-tight text-slate-100 truncate">{bank.name}</h3>
+          <span className={`text-xs px-2 py-1 rounded-full border font-medium ${isOwner ? 'bg-blue-500/10 border-blue-500/20 text-blue-300' : 'bg-amber-500/10 border-amber-500/20 text-amber-300'}`}>
             {isOwner ? 'Owner' : 'Shared'}
           </span>
         </div>
-        <p className="text-sm text-slate-400 mt-1">
+        <p className="text-sm text-slate-400 mt-2">
           {isOwner ? 'Bấm để mở màn cấu hình kho' : 'Kho được chia sẻ - chỉ đọc'}
         </p>
       </button>
@@ -267,14 +267,14 @@ function BankListItem({
           <button
             type="button"
             onClick={() => onShareCode(bank.id)}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-600/10 text-indigo-300 hover:bg-indigo-600/20 transition-colors"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-600/10 text-indigo-300 hover:bg-indigo-600/20 transition-colors duration-150 font-medium shadow-sm hover:shadow-md"
           >
             {bank.shareCode ? 'Copy mã' : 'Tạo mã'}
           </button>
           <button
             type="button"
             onClick={() => onDeleteBank(bank.id)}
-            className="w-9 h-9 inline-flex items-center justify-center rounded-lg border border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20 transition-colors"
+            className="w-9 h-9 inline-flex items-center justify-center rounded-lg border border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20 transition-colors duration-150 shadow-sm hover:shadow-md"
             title="Xóa kho"
             aria-label="Xóa kho"
           >
@@ -286,14 +286,14 @@ function BankListItem({
           <button
             type="button"
             onClick={() => onCopySharedCode(bank)}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-600/10 text-indigo-300 hover:bg-indigo-600/20 transition-colors"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-600/10 text-indigo-300 hover:bg-indigo-600/20 transition-colors duration-150 font-medium shadow-sm hover:shadow-md"
           >
             Copy mã
           </button>
           <button
             type="button"
             onClick={() => onLeaveSharedBank(bank.id)}
-            className="w-9 h-9 inline-flex items-center justify-center rounded-lg border border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20 transition-colors"
+            className="w-9 h-9 inline-flex items-center justify-center rounded-lg border border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20 transition-colors duration-150 shadow-sm hover:shadow-md"
             title="Rời kho"
             aria-label="Rời kho"
           >
@@ -302,7 +302,7 @@ function BankListItem({
         </div>
       )}
 
-      <ChevronRight size={18} className="text-slate-500 group-hover:text-slate-200 transition-colors shrink-0" />
+      <ChevronRight size={18} className="text-slate-500 group-hover:text-slate-200 transition-colors duration-200 shrink-0" />
     </div>
   );
 }

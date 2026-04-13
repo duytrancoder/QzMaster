@@ -82,10 +82,10 @@ export function Practice() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-6">
-      <header className="flex flex-col md:flex-row gap-4 justify-between md:items-center bg-slate-900/50 p-6 rounded-2xl border border-slate-800 backdrop-blur-sm">
+      <header className="flex flex-col md:flex-row gap-4 justify-between md:items-center bg-slate-900/50 p-6 rounded-2xl border border-slate-800 backdrop-blur-sm shadow-md">
         <div>
-          <h1 className="text-2xl font-bold text-slate-100">Ôn tập tự do</h1>
-          <p className="text-sm text-slate-400 mt-1">Luyện tập không giới hạn thời gian</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-100">Ôn tập tự do</h1>
+          <p className="text-sm text-slate-400 mt-2">Luyện tập không giới hạn thời gian</p>
         </div>
 
         <div className="flex-1 max-w-sm w-full space-y-3">
@@ -97,7 +97,7 @@ export function Practice() {
                 setShowAllAnswers(false);
                 setSearchQuery('');
               }}
-              className="flex-1 bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none appearance-none"
+              className="flex-1 bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none appearance-none transition-colors duration-150"
             >
               {banks.map((b) => (
                 <option key={b.id} value={b.id}>{getBankOptionLabel(b.name)}</option>
@@ -105,7 +105,7 @@ export function Practice() {
             </select>
 
             {selectedBank ? (
-              <span className={`text-xs px-2.5 py-2 rounded-lg border whitespace-nowrap ${selectedBankBadgeClass}`}>
+              <span className={`text-xs px-2.5 py-2 rounded-lg border whitespace-nowrap font-medium ${selectedBankBadgeClass}`}>
                 {selectedBank.isShared ? 'Shared' : 'Owner'}
               </span>
             ) : null}
@@ -119,16 +119,16 @@ export function Practice() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-slate-950 border border-slate-800 text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 outline-none transition-colors"
+              className="bg-slate-950 border border-slate-800 text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 outline-none transition-colors duration-150"
               placeholder="Tìm kiếm câu hỏi..."
             />
           </div>
           <button
             onClick={() => setShowAllAnswers(!showAllAnswers)}
-            className={`w-full sm:w-auto px-4 py-2.5 rounded-lg border flex items-center justify-center gap-2 text-sm font-medium transition-colors ${
+            className={`w-full sm:w-auto px-4 py-2.5 rounded-lg border flex items-center justify-center gap-2 text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 ${
               showAllAnswers
                 ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
-                : 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20 hover:bg-blue-500'
+                : 'bg-blue-600 border-blue-500 text-white hover:bg-blue-500'
             }`}
           >
             <Eye size={16} /> {showAllAnswers ? 'Ẩn đáp án toàn bộ' : 'Xem đáp án toàn bộ'}
@@ -139,7 +139,7 @@ export function Practice() {
       {isLoadingQuestions ? (
         <div className="text-center py-12 text-slate-500 space-y-3">
           <div className="w-8 h-8 border-2 border-slate-700 border-t-blue-500 rounded-full animate-spin mx-auto" />
-          <p>Đang tải câu hỏi...</p>
+          <p className="text-sm font-medium">Đang tải câu hỏi...</p>
         </div>
       ) : questions.length === 0 ? (
         <div className="text-center py-12 text-slate-500 flex flex-col items-center">
@@ -160,10 +160,10 @@ export function Practice() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 key={q.id}
-                className="bg-slate-900/40 border border-slate-800 rounded-xl p-5 hover:bg-slate-900/60 transition-colors"
+                className="bg-slate-900/40 border border-slate-800 rounded-xl p-5 hover:bg-slate-900/60 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
               >
                 <div className="flex justify-between items-start gap-4 mb-4">
-                  <h3 className="text-slate-200 font-medium leading-relaxed">
+                    <h3 className="text-slate-200 font-medium leading-relaxed tracking-tight">
                     <span className="text-blue-400 font-bold mr-2">Câu {idx + 1}:</span>
                     {highlightText(q.content || q.text || '', searchQuery)}
                   </h3>
@@ -177,7 +177,7 @@ export function Practice() {
                     return (
                       <div
                         key={opt}
-                        className={`p-3 rounded-lg border transition-all ${
+                        className={`p-3 rounded-lg border transition-all duration-150 ${
                           showAsCorrect
                             ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-100 shadow-[0_0_15px_rgba(16,185,129,0.1)] ring-1 ring-emerald-500/50'
                             : 'bg-slate-950 border-slate-800 text-slate-400 opacity-80'

@@ -71,7 +71,7 @@ export function BankConfig() {
     return (
       <div className="max-w-3xl mx-auto text-center py-16 space-y-4">
         <p className="text-slate-400">Không tìm thấy kho này hoặc bạn chưa gia nhập kho đó.</p>
-        <Link to="/banks" className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors">
+        <Link to="/banks" className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors duration-150 font-medium">
           <ArrowLeft size={16} /> Quay lại Kho ôn tập
         </Link>
       </div>
@@ -82,12 +82,12 @@ export function BankConfig() {
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="max-w-5xl mx-auto space-y-6 pb-10">
       <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-800 pb-5">
         <div>
-          <Link to="/banks" className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200 transition-colors mb-3">
+          <Link to="/banks" className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200 transition-colors duration-150 mb-3">
             <ArrowLeft size={16} /> Quay lại danh sách kho
           </Link>
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-3xl font-bold text-slate-100">{bank.name}</h1>
-            <span className={`text-xs px-2 py-1 rounded-full border ${isOwner ? 'bg-blue-500/10 border-blue-500/20 text-blue-300' : 'bg-amber-500/10 border-amber-500/20 text-amber-300'}`}>
+            <h1 className="text-3xl font-semibold tracking-tight text-slate-100">{bank.name}</h1>
+            <span className={`text-xs px-2 py-1 rounded-full border font-medium ${isOwner ? 'bg-blue-500/10 border-blue-500/20 text-blue-300' : 'bg-amber-500/10 border-amber-500/20 text-amber-300'}`}>
               {isOwner ? 'Owner' : 'Shared'}
             </span>
           </div>
@@ -99,14 +99,14 @@ export function BankConfig() {
             <>
               <button
                 onClick={handleShareCode}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 font-medium"
               >
                 {bank.shareCode ? <Copy size={16} /> : <LinkIcon size={16} />}
                 {bank.shareCode ? 'Copy mã' : 'Tạo mã chia sẻ'}
               </button>
               <button
                 onClick={handleDeleteBank}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 font-medium"
               >
                 <Trash2 size={16} /> Xóa kho
               </button>
@@ -114,7 +114,7 @@ export function BankConfig() {
           ) : (
             <button
               onClick={handleLeaveBank}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 font-medium"
             >
               <Trash2 size={16} /> Rời kho
             </button>
@@ -237,9 +237,9 @@ function QuestionsSection({ bankId, isOwner }: Readonly<{ bankId: string; isOwne
   }
 
   return (
-    <section className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6 space-y-5 backdrop-blur-sm">
+    <section className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6 space-y-5 backdrop-blur-sm shadow-md">
       <div className="flex items-center justify-between gap-4">
-        <h2 className="text-xl font-semibold text-slate-100">Danh sách câu hỏi</h2>
+        <h2 className="text-xl font-semibold tracking-tight text-slate-100">Danh sách câu hỏi</h2>
         {isOwner ? (
           <div className="flex items-center gap-2 flex-wrap">
             <input
@@ -255,7 +255,7 @@ function QuestionsSection({ bankId, isOwner }: Readonly<{ bankId: string; isOwne
                 variant="outline"
                 onClick={handleOpenImportDialog}
                 disabled={isImporting}
-                className="min-w-[160px] justify-start border-slate-700 bg-transparent pl-3 pr-14 text-slate-200 hover:bg-slate-800 hover:text-slate-50"
+                className="min-w-[160px] justify-start border-slate-700 bg-transparent pl-3 pr-14 text-slate-200 hover:bg-slate-800 hover:text-slate-50 transition-colors duration-150"
               >
                 {isImporting ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />} Nhập JSON
               </Button>
@@ -265,7 +265,7 @@ function QuestionsSection({ bankId, isOwner }: Readonly<{ bankId: string; isOwne
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="absolute right-2 top-1/2 z-10 size-6 -translate-y-1/2 rounded-full border border-slate-600/80 bg-slate-900/80 p-0 text-slate-300 shadow-sm hover:bg-slate-700 hover:text-slate-100"
+                    className="absolute right-2 top-1/2 z-10 size-6 -translate-y-1/2 rounded-full border border-slate-600/80 bg-slate-900/80 p-0 text-slate-300 shadow-sm hover:bg-slate-700 hover:text-slate-100 transition-colors duration-150"
                     aria-label="Trợ giúp nhập JSON"
                   >
                     <CircleHelp size={13} />
@@ -383,7 +383,7 @@ function AddQuestionForm({ onAdd, onCancel }: Readonly<{ onAdd: (q: Question) =>
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       onSubmit={handleSubmit}
-      className="p-4 bg-slate-950 border border-slate-800 rounded-lg space-y-4"
+      className="p-4 bg-slate-950 border border-slate-800 rounded-lg space-y-4 shadow-sm"
     >
       <div>
         <label htmlFor="bank-question-content" className="block text-xs font-medium text-slate-400 mb-1">Câu hỏi</label>
@@ -391,7 +391,7 @@ function AddQuestionForm({ onAdd, onCancel }: Readonly<{ onAdd: (q: Question) =>
           id="bank-question-content"
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          className="w-full bg-slate-900 border border-slate-700 rounded-md p-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          className="w-full bg-slate-900 border border-slate-700 rounded-md p-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors duration-150"
           rows={3}
           placeholder="Nhập nội dung câu hỏi..."
           required
@@ -415,7 +415,7 @@ function AddQuestionForm({ onAdd, onCancel }: Readonly<{ onAdd: (q: Question) =>
               value={options[opt]}
               onChange={(e) => setOptions((prev) => ({ ...prev, [opt]: e.target.value }))}
               placeholder={`Đáp án ${opt}`}
-              className="flex-1 bg-slate-900 border border-slate-700 rounded-md p-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
+              className="flex-1 bg-slate-900 border border-slate-700 rounded-md p-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 transition-colors duration-150"
               required
             />
           </div>
@@ -426,14 +426,14 @@ function AddQuestionForm({ onAdd, onCancel }: Readonly<{ onAdd: (q: Question) =>
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-md transition-colors"
+          className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-md transition-colors duration-150"
         >
           Hủy
         </button>
         <button
           type="submit"
           disabled={isSubmitting}
-          className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-md transition-colors flex items-center gap-2"
+          className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-md transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2"
         >
           <Save size={16} /> {isSubmitting ? 'Đang lưu...' : 'Lưu câu hỏi'}
         </button>
