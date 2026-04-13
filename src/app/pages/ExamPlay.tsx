@@ -38,26 +38,46 @@ export function ExamPlay() {
       return;
     }
 
-    if (activeExam.timeLimit > 0) {
-      const elapsed = Math.floor((Date.now() - activeExam.startTime) / 1000);
-      const remaining = activeExam.timeLimit * 60 - elapsed;
-      setTimeLeft(Math.max(0, remaining));
-
-      const timer = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            if (!isSubmittingRef.current) {
-              handleSubmit(true);
-            }
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      return () => clearInterval(timer);
+    if (activeExam.timeLimit <= 0) {
+      return;
     }
+
+    // Store constants for timer
+    const startTime = activeExam.startTime;
+    const timeLimit = activeExam.timeLimit * 60; // convert minutes to seconds
+
+    // Function to recalculate time based on actual elapsed time (not state decrement)
+    const updateTimer = () => {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const remaining = Math.max(0, timeLimit - elapsed);
+      
+      setTimeLeft(remaining);
+
+      // Auto-submit when time runs out
+      if (remaining <= 0 && !isSubmittingRef.current) {
+        handleSubmit(true);
+      }
+    };
+
+    // Initial update
+    updateTimer();
+
+    // Recalculate timer every second (not decrement)
+    const timer = setInterval(updateTimer, 1000);
+
+    // Force timer update when tab becomes visible (fixes mobile background throttling)
+    const handleVisibilityChange = () => {
+      if (document.hidden === false) {
+        updateTimer();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [activeExam]);
 
   // Sync answers back to context periodically
