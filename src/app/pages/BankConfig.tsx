@@ -249,27 +249,28 @@ function QuestionsSection({ bankId, isOwner }: Readonly<{ bankId: string; isOwne
               className="hidden"
               onChange={handleImportJSON}
             />
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleOpenImportDialog}
-              disabled={isImporting}
-              className="border-slate-700 bg-transparent text-slate-200 hover:bg-slate-800 hover:text-slate-50"
-            >
-              {isImporting ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />} Nhập JSON
-            </Button>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="text-slate-400 hover:text-slate-200"
-                  aria-label="Trợ giúp nhập JSON"
-                >
-                  <CircleHelp size={18} />
-                </Button>
-              </PopoverTrigger>
+            <div className="relative inline-flex">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleOpenImportDialog}
+                disabled={isImporting}
+                className="min-w-[160px] justify-start border-slate-700 bg-transparent pl-3 pr-14 text-slate-200 hover:bg-slate-800 hover:text-slate-50"
+              >
+                {isImporting ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />} Nhập JSON
+              </Button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-1/2 z-10 size-6 -translate-y-1/2 rounded-full border border-slate-600/80 bg-slate-900/80 p-0 text-slate-300 shadow-sm hover:bg-slate-700 hover:text-slate-100"
+                    aria-label="Trợ giúp nhập JSON"
+                  >
+                    <CircleHelp size={13} />
+                  </Button>
+                </PopoverTrigger>
               <PopoverContent align="end" className="w-[min(92vw,560px)] space-y-3">
                 <p className="text-sm font-semibold">Hướng dẫn nạp câu hỏi bằng file JSON</p>
                 <p className="text-sm text-muted-foreground">
@@ -322,7 +323,8 @@ function QuestionsSection({ bankId, isOwner }: Readonly<{ bankId: string; isOwne
                   Bạn có thể mở ChatGPT và yêu cầu: <strong>"Tạo ra 50 câu hỏi trắc nghiệm về [Chủ đề], trả lời ĐÚNG ĐỊNH DẠNG JSON chuẩn theo cấu trúc tôi cung cấp"</strong>, sau đó copy kết quả lưu thành file <code>.json</code> là có thể Import ngay.
                 </p>
               </PopoverContent>
-            </Popover>
+              </Popover>
+            </div>
             <button
               onClick={() => setShowAddQuestion((prev) => !prev)}
               className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 transition-colors"
