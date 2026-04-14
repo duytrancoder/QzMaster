@@ -112,6 +112,12 @@ export function Layout() {
           })}
         </nav>
 
+        {isSidebarExpanded && (
+          <div className="px-6 pb-2">
+            <p className="text-[11px] text-slate-500 tracking-wide">Designed by Khánh Duy</p>
+          </div>
+        )}
+
         {/* User + Sign Out */}
         <div className={`p-4 border-t border-white/10 ${isSidebarExpanded ? '' : 'flex justify-center'}`}>
           {isSidebarExpanded ? (
