@@ -161,17 +161,25 @@ function QuestionsSection({ bankId, isOwner }: Readonly<{ bankId: string; isOwne
   };
 
   const handleImportJSON = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || isImporting) {
+    const files = Array.from(event.target.files ?? []);
+    if (files.length === 0 || isImporting) {
       event.target.value = '';
       return;
     }
 
     setIsImporting(true);
     try {
-      const result = await importQuestions(bankId, file);
-      setQuestions(result.questions);
-      toast.success(`Đã nạp thành công ${result.importedCount} câu hỏi!`);
+      let totalImported = 0;
+      let latestQuestions: Question[] = [];
+
+      for (const file of files) {
+        const result = await importQuestions(bankId, file);
+        totalImported += result.importedCount;
+        latestQuestions = result.questions;
+      }
+
+      setQuestions(latestQuestions);
+      toast.success(`Đã nạp thành công ${totalImported} câu hỏi từ ${files.length} file!`);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Nhập JSON thất bại';
       toast.error(message);
@@ -246,6 +254,7 @@ function QuestionsSection({ bankId, isOwner }: Readonly<{ bankId: string; isOwne
               ref={fileInputRef}
               type="file"
               accept=".json,application/json"
+              multiple
               className="hidden"
               onChange={handleImportJSON}
             />

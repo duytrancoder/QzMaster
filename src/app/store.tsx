@@ -122,7 +122,8 @@ async function fetchQuestionsByBankIdVariants(bankId: string): Promise<Array<Rec
     .from('questions')
     .select('*')
     .eq('bank_id', bankId)
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: true })
+    .order('id', { ascending: true });
 
   if (error) {
     throw error;
@@ -579,22 +580,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       mappedData.push(mapImportedQuestionRow(parsed[index] as Record<string, unknown>, bankId));
     }
 
-    const { data: insertedRows, error: insertErr } = await supabase
+    const { error: insertErr } = await supabase
       .from('questions')
       .insert(mappedData)
-      .select('*');
+      .select('id');
 
     if (insertErr) {
       const detailText = [insertErr.message, insertErr.details, insertErr.hint].filter(Boolean).join(' | ');
       throw new Error(detailText ? `Lỗi từ Database: ${detailText}` : 'Lỗi từ Database: Không thể nạp câu hỏi.');
     }
 
-    let refreshedQuestions = (insertedRows ?? []).map((row) => mapQuestionRow(row as Record<string, unknown>));
-
-    if (refreshedQuestions.length === 0) {
-      const freshRows = await fetchQuestionsByBankIdVariants(bankId);
-      refreshedQuestions = freshRows.map((row) => mapQuestionRow(row));
-    }
+    const freshRows = await fetchQuestionsByBankIdVariants(bankId);
+    const refreshedQuestions = freshRows.map((row) => mapQuestionRow(row));
 
     setSharedQuestionsByBank((prev) => ({
       ...prev,
