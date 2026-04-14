@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useDeferredValue } from 'react';
+import React, { useState, useMemo, useEffect, useDeferredValue, useCallback } from 'react';
 import { motion } from 'motion/react';
 import { useAppStore } from '../store';
 import { removeVietnameseTones } from '../utils';
@@ -81,24 +81,53 @@ export function Practice() {
       .map(({ question, questionNumber }) => ({ question, questionNumber }));
   }, [selectedBank, numberedQuestions, searchableQuestions, normalizedDeferredQuery]);
 
-  const highlightText = (text: string, query: string) => {
-    if (!query.trim()) return text;
+  const highlightRegex = useMemo(() => {
+    const query = deferredSearchQuery.trim();
+    if (!query) return null;
+
     try {
-      const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-      const parts = text.split(regex);
-      return parts.map((part, i) =>
-        part.match(regex) ? (
-          <span key={i} className="bg-blue-500/30 text-blue-200 px-1 rounded-sm">
-            {part}
-          </span>
-        ) : (
-          part
-        )
-      );
+      const escaped = query.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return new RegExp(escaped, 'gi');
     } catch {
-      return text;
+      return null;
     }
-  };
+  }, [deferredSearchQuery]);
+
+  const highlightText = useCallback(
+    (text: string) => {
+      if (!highlightRegex) return text;
+
+      const matches = Array.from(text.matchAll(highlightRegex));
+      if (matches.length === 0) return text;
+
+      const chunks: React.ReactNode[] = [];
+      let lastIndex = 0;
+
+      for (const match of matches) {
+        const matchedText = match[0];
+        const startIndex = match.index ?? 0;
+
+        if (startIndex > lastIndex) {
+          chunks.push(text.slice(lastIndex, startIndex));
+        }
+
+        chunks.push(
+          <span key={`${startIndex}-${matchedText}`} className="bg-blue-500/30 text-blue-200 px-1 rounded-sm">
+            {matchedText}
+          </span>
+        );
+
+        lastIndex = startIndex + matchedText.length;
+      }
+
+      if (lastIndex < text.length) {
+        chunks.push(text.slice(lastIndex));
+      }
+
+      return chunks;
+    },
+    [highlightRegex]
+  );
 
   if (banks.length === 0) {
     return (
@@ -184,16 +213,14 @@ export function Practice() {
           {filteredQuestions.map(({ question: q, questionNumber }) => {
             const isRevealed = showAllAnswers;
             return (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
+              <div
                 key={q.id}
                 className="bg-slate-900/40 border border-slate-800 rounded-xl p-5 hover:bg-slate-900/60 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
               >
                 <div className="flex justify-between items-start gap-4 mb-4">
                     <h3 className="text-slate-200 font-medium leading-relaxed tracking-tight">
                     <span className="text-blue-400 font-bold mr-2">Câu {questionNumber}:</span>
-                    {highlightText(q.content || q.text || '', searchQuery)}
+                    {highlightText(q.content || q.text || '')}
                   </h3>
                 </div>
 
@@ -214,12 +241,12 @@ export function Practice() {
                         <span className={`font-bold mr-2 ${showAsCorrect ? 'text-emerald-400' : 'text-slate-500'}`}>
                           {opt}.
                         </span>
-                        {highlightText(q.options[opt], searchQuery)}
+                        {highlightText(q.options[opt])}
                       </div>
                     );
                   })}
                 </div>
-              </motion.div>
+              </div>
             );
           })}
         </div>
