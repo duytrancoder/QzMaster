@@ -114,7 +114,12 @@ export function Layout() {
 
         {isSidebarExpanded && (
           <div className="px-6 pb-2">
-            <p className="text-[11px] text-slate-500 tracking-wide">Designed by Khánh Duy</p>
+            <p
+              className="text-[11px] text-slate-400 tracking-[0.08em] italic"
+              style={{ fontFamily: 'Georgia, "Times New Roman", Times, serif' }}
+            >
+              Designed by Khánh Duy
+            </p>
           </div>
         )}
 
