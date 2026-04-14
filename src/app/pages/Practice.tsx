@@ -61,15 +61,6 @@ export function Practice() {
     });
   }, [selectedBank, numberedQuestions, searchQuery]);
 
-  const searchSuggestions = useMemo(() => {
-    if (!searchQuery.trim()) return [];
-
-    return filteredQuestions
-      .slice()
-      .sort((a, b) => a.questionNumber - b.questionNumber)
-      .slice(0, 8);
-  }, [filteredQuestions, searchQuery]);
-
   const highlightText = (text: string, query: string) => {
     if (!query.trim()) return text;
     try {
@@ -140,21 +131,6 @@ export function Practice() {
               className="bg-slate-950 border border-slate-800 text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 outline-none transition-colors duration-150"
               placeholder="Tìm kiếm câu hỏi..."
             />
-            {searchSuggestions.length > 0 ? (
-              <div className="absolute z-20 mt-2 w-full rounded-lg border border-slate-800 bg-slate-950/95 shadow-lg backdrop-blur-sm overflow-hidden">
-                {searchSuggestions.map(({ question, questionNumber }) => (
-                  <button
-                    key={question.id}
-                    type="button"
-                    onClick={() => setSearchQuery(`Câu ${questionNumber}`)}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-slate-900 transition-colors duration-150 border-b border-slate-800 last:border-b-0"
-                  >
-                    <span className="text-blue-400 font-semibold mr-2">Câu {questionNumber}</span>
-                    <span className="text-slate-300 line-clamp-1">{question.content || question.text || ''}</span>
-                  </button>
-                ))}
-              </div>
-            ) : null}
           </div>
           <button
             onClick={() => setShowAllAnswers(!showAllAnswers)}
