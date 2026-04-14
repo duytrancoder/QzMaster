@@ -18,12 +18,12 @@ export function Layout() {
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const { user, signOut } = useAuth();
+  const isDayMode = !isDarkMode;
 
   useEffect(() => {
-    const savedMode = localStorage.getItem('qzmaster-theme');
-    const shouldUseDark = savedMode ? savedMode === 'dark' : true;
-    setIsDarkMode(shouldUseDark);
-    document.documentElement.classList.toggle('dark', shouldUseDark);
+    setIsDarkMode(true);
+    document.documentElement.classList.add('dark');
+    localStorage.setItem('qzmaster-theme', 'dark');
   }, []);
 
   const handleThemeToggle = (checked: boolean) => {
@@ -131,8 +131,8 @@ export function Layout() {
                   type="checkbox"
                   role="switch"
                   className="dark-2"
-                  checked={isDarkMode}
-                  onChange={(event) => handleThemeToggle(event.target.checked)}
+                  checked={isDayMode}
+                  onChange={(event) => handleThemeToggle(!event.target.checked)}
                   aria-label="Chuyển ngày đêm"
                   title="Chuyển ngày đêm"
                 />
@@ -150,8 +150,8 @@ export function Layout() {
                 type="checkbox"
                 role="switch"
                 className="dark-2"
-                checked={isDarkMode}
-                onChange={(event) => handleThemeToggle(event.target.checked)}
+                checked={isDayMode}
+                onChange={(event) => handleThemeToggle(!event.target.checked)}
                 aria-label="Chuyển ngày đêm"
                 title="Chuyển ngày đêm"
               />
