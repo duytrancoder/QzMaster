@@ -39,18 +39,36 @@ export function Practice() {
     ? 'bg-amber-500/10 border-amber-500/20 text-amber-300'
     : 'bg-blue-500/10 border-blue-500/20 text-blue-300';
 
+  const numberedQuestions = useMemo(
+    () => questions.map((question, index) => ({ question, questionNumber: index + 1 })),
+    [questions]
+  );
+
   const filteredQuestions = useMemo(() => {
     if (!selectedBank) return [];
-    if (!searchQuery.trim()) return questions;
+    if (!searchQuery.trim()) return numberedQuestions;
+
     const normalizedQuery = removeVietnameseTones(searchQuery);
-    return questions.filter((q) => {
-      const matchText = removeVietnameseTones(q.content || q.text || '').includes(normalizedQuery);
-      const matchOpts = Object.values(q.options).some((opt) =>
+    return numberedQuestions.filter(({ question, questionNumber }) => {
+      const normalizedQuestionNo = `cau ${questionNumber}`;
+      const plainQuestionNo = String(questionNumber);
+      const matchText = removeVietnameseTones(question.content || question.text || '').includes(normalizedQuery);
+      const matchOpts = Object.values(question.options).some((opt) =>
         removeVietnameseTones(opt).includes(normalizedQuery)
       );
-      return matchText || matchOpts;
+      const matchQuestionNo = normalizedQuestionNo.includes(normalizedQuery) || plainQuestionNo.includes(normalizedQuery);
+      return matchText || matchOpts || matchQuestionNo;
     });
-  }, [selectedBank, questions, searchQuery]);
+  }, [selectedBank, numberedQuestions, searchQuery]);
+
+  const searchSuggestions = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+
+    return filteredQuestions
+      .slice()
+      .sort((a, b) => a.questionNumber - b.questionNumber)
+      .slice(0, 8);
+  }, [filteredQuestions, searchQuery]);
 
   const highlightText = (text: string, query: string) => {
     if (!query.trim()) return text;
@@ -58,7 +76,7 @@ export function Practice() {
       const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
       const parts = text.split(regex);
       return parts.map((part, i) =>
-        regex.test(part) ? (
+        part.match(regex) ? (
           <span key={i} className="bg-blue-500/30 text-blue-200 px-1 rounded-sm">
             {part}
           </span>
@@ -122,6 +140,21 @@ export function Practice() {
               className="bg-slate-950 border border-slate-800 text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 outline-none transition-colors duration-150"
               placeholder="Tìm kiếm câu hỏi..."
             />
+            {searchSuggestions.length > 0 ? (
+              <div className="absolute z-20 mt-2 w-full rounded-lg border border-slate-800 bg-slate-950/95 shadow-lg backdrop-blur-sm overflow-hidden">
+                {searchSuggestions.map(({ question, questionNumber }) => (
+                  <button
+                    key={question.id}
+                    type="button"
+                    onClick={() => setSearchQuery(`Câu ${questionNumber}`)}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-slate-900 transition-colors duration-150 border-b border-slate-800 last:border-b-0"
+                  >
+                    <span className="text-blue-400 font-semibold mr-2">Câu {questionNumber}</span>
+                    <span className="text-slate-300 line-clamp-1">{question.content || question.text || ''}</span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
           <button
             onClick={() => setShowAllAnswers(!showAllAnswers)}
@@ -152,7 +185,7 @@ export function Practice() {
         </div>
       ) : (
         <div className="space-y-4 pb-20">
-          {filteredQuestions.map((q, idx) => {
+          {filteredQuestions.map(({ question: q, questionNumber }) => {
             const isRevealed = showAllAnswers;
             return (
               <motion.div
@@ -164,7 +197,7 @@ export function Practice() {
               >
                 <div className="flex justify-between items-start gap-4 mb-4">
                     <h3 className="text-slate-200 font-medium leading-relaxed tracking-tight">
-                    <span className="text-blue-400 font-bold mr-2">Câu {idx + 1}:</span>
+                    <span className="text-blue-400 font-bold mr-2">Câu {questionNumber}:</span>
                     {highlightText(q.content || q.text || '', searchQuery)}
                   </h3>
                 </div>

@@ -212,7 +212,11 @@ function validateImportedQuestionRow(row: unknown, index: number): string | null
   return null;
 }
 
-function mapImportedQuestionRow(row: Record<string, unknown>, bankId: string): Record<string, unknown> {
+function mapImportedQuestionRow(
+  row: Record<string, unknown>,
+  bankId: string,
+  createdAtIso: string
+): Record<string, unknown> {
   const options = row.options as Record<string, unknown>;
 
   return {
@@ -225,6 +229,7 @@ function mapImportedQuestionRow(row: Record<string, unknown>, bankId: string): R
       D: options.D,
     },
     correct_answer: row.correct_answer,
+    created_at: createdAtIso,
   };
 }
 
@@ -570,6 +575,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
 
     const mappedData: Array<Record<string, unknown>> = [];
+    const importStartedAt = Date.now();
 
     for (let index = 0; index < parsed.length; index += 1) {
       const validationError = validateImportedQuestionRow(parsed[index], index);
@@ -577,7 +583,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         throw new Error(validationError);
       }
 
-      mappedData.push(mapImportedQuestionRow(parsed[index] as Record<string, unknown>, bankId));
+      const createdAtIso = new Date(importStartedAt + index).toISOString();
+      mappedData.push(mapImportedQuestionRow(parsed[index] as Record<string, unknown>, bankId, createdAtIso));
     }
 
     const { error: insertErr } = await supabase
