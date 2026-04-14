@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useDeferredValue } from 'react';
 import { motion } from 'motion/react';
 import { useAppStore } from '../store';
 import { removeVietnameseTones } from '../utils';
@@ -11,6 +11,7 @@ export function Practice() {
   const { getQuestionsForBank } = useAppStore();
   const [selectedBankId, setSelectedBankId] = useState<string>(banks[0]?.id || '');
   const [searchQuery, setSearchQuery] = useState('');
+  const deferredSearchQuery = useDeferredValue(searchQuery);
   const [showAllAnswers, setShowAllAnswers] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
@@ -44,22 +45,41 @@ export function Practice() {
     [questions]
   );
 
+  const searchableQuestions = useMemo(
+    () =>
+      numberedQuestions.map(({ question, questionNumber }) => {
+        const content = question.content || question.text || '';
+        return {
+          question,
+          questionNumber,
+          normalizedContent: removeVietnameseTones(content),
+          normalizedOptions: Object.values(question.options).map((opt) => removeVietnameseTones(opt)),
+          normalizedQuestionNo: `cau ${questionNumber}`,
+          plainQuestionNo: String(questionNumber),
+        };
+      }),
+    [numberedQuestions]
+  );
+
+  const normalizedDeferredQuery = useMemo(
+    () => removeVietnameseTones(deferredSearchQuery),
+    [deferredSearchQuery]
+  );
+
   const filteredQuestions = useMemo(() => {
     if (!selectedBank) return [];
-    if (!searchQuery.trim()) return numberedQuestions;
+    if (!normalizedDeferredQuery) return numberedQuestions;
 
-    const normalizedQuery = removeVietnameseTones(searchQuery);
-    return numberedQuestions.filter(({ question, questionNumber }) => {
-      const normalizedQuestionNo = `cau ${questionNumber}`;
-      const plainQuestionNo = String(questionNumber);
-      const matchText = removeVietnameseTones(question.content || question.text || '').includes(normalizedQuery);
-      const matchOpts = Object.values(question.options).some((opt) =>
-        removeVietnameseTones(opt).includes(normalizedQuery)
-      );
-      const matchQuestionNo = normalizedQuestionNo.includes(normalizedQuery) || plainQuestionNo.includes(normalizedQuery);
-      return matchText || matchOpts || matchQuestionNo;
-    });
-  }, [selectedBank, numberedQuestions, searchQuery]);
+    return searchableQuestions
+      .filter(({ normalizedContent, normalizedOptions, normalizedQuestionNo, plainQuestionNo }) => {
+        const matchText = normalizedContent.includes(normalizedDeferredQuery);
+        const matchOpts = normalizedOptions.some((opt) => opt.includes(normalizedDeferredQuery));
+        const matchQuestionNo =
+          normalizedQuestionNo.includes(normalizedDeferredQuery) || plainQuestionNo.includes(normalizedDeferredQuery);
+        return matchText || matchOpts || matchQuestionNo;
+      })
+      .map(({ question, questionNumber }) => ({ question, questionNumber }));
+  }, [selectedBank, numberedQuestions, searchableQuestions, normalizedDeferredQuery]);
 
   const highlightText = (text: string, query: string) => {
     if (!query.trim()) return text;
@@ -165,7 +185,6 @@ export function Practice() {
             const isRevealed = showAllAnswers;
             return (
               <motion.div
-                layout
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 key={q.id}
