@@ -183,7 +183,7 @@ export function Layout() {
       <Sheet open={isMobileSheetOpen} onOpenChange={setIsMobileSheetOpen}>
         <SheetContent
           side="left"
-          className="w-[85vw] max-w-[320px] border-r border-white/10 bg-[#07080a] p-0 text-slate-100"
+          className="w-[78vw] max-w-[280px] border-r border-white/10 bg-[#07080a] p-0 text-slate-100"
         >
           <SheetTitle className="sr-only">Menu điều hướng</SheetTitle>
           <div className="flex h-full flex-col">
