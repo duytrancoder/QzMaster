@@ -4,6 +4,7 @@ import { BookOpen, Edit3, History, Home, PlayCircle, Menu, LogOut } from 'lucide
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
+import { Sheet, SheetContent, SheetTitle } from './ui/sheet';
 
 const navItems = [
   { name: 'Trang chủ', path: '/', icon: Home },
@@ -16,6 +17,7 @@ const navItems = [
 export function Layout() {
   const location = useLocation();
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
+  const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const { user, signOut } = useAuth();
   const isDayMode = !isDarkMode;
@@ -43,101 +45,119 @@ export function Layout() {
 
   return (
     <div className="flex h-screen bg-[#07080a] text-slate-100 font-sans">
-      {/* Sidebar */}
-      <motion.aside
-        initial={false}
-        animate={{ width: isSidebarExpanded ? 256 : 80 }}
-        className="border-r border-white/10 bg-white/[0.03] flex flex-col relative z-20 shrink-0 overflow-hidden backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
-      >
-        {/* Header */}
-        <div className={`p-6 flex items-center ${isSidebarExpanded ? 'justify-between' : 'justify-center'}`}>
-          <AnimatePresence>
-            {isSidebarExpanded && (
-              <motion.h1
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: 'auto' }}
-                exit={{ opacity: 0, width: 0 }}
-                className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent whitespace-nowrap overflow-hidden"
-              >
-                QzMaster
-              </motion.h1>
-            )}
-          </AnimatePresence>
-          <button
-            onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
-            className="p-2 text-slate-400 hover:text-slate-200 hover:bg-white/5 rounded-lg transition-colors duration-150 shrink-0"
-          >
-            <Menu size={24} />
-          </button>
-        </div>
+      <div className="hidden md:flex">
+        <motion.aside
+          initial={false}
+          animate={{ width: isSidebarExpanded ? 256 : 80 }}
+          className="border-r border-white/10 bg-white/[0.03] flex flex-col relative z-20 shrink-0 overflow-hidden backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+        >
+          <div className={`p-6 flex items-center ${isSidebarExpanded ? 'justify-between' : 'justify-center'}`}>
+            <AnimatePresence>
+              {isSidebarExpanded && (
+                <motion.h1
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: 'auto' }}
+                  exit={{ opacity: 0, width: 0 }}
+                  className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent whitespace-nowrap overflow-hidden"
+                >
+                  QzMaster
+                </motion.h1>
+              )}
+            </AnimatePresence>
+            <button
+              onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
+              className="min-h-[44px] min-w-[44px] p-2 text-slate-400 hover:text-slate-200 hover:bg-white/5 rounded-lg transition-colors duration-150 shrink-0"
+              aria-label="Thu gọn hoặc mở rộng sidebar"
+              title="Thu gọn hoặc mở rộng sidebar"
+            >
+              <Menu size={24} />
+            </button>
+          </div>
 
-        {/* Nav */}
-        <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
-          {navItems.map((item) => {
-            const isActive =
-              location.pathname === item.path ||
-              (location.pathname.startsWith('/exam') && item.path.startsWith('/exam'));
-            const Icon = item.icon;
+          <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
+            {navItems.map((item) => {
+              const isActive =
+                location.pathname === item.path ||
+                (location.pathname.startsWith('/exam') && item.path.startsWith('/exam'));
+              const Icon = item.icon;
 
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center py-3 rounded-xl transition-all duration-150 relative ${
-                  isSidebarExpanded ? 'px-4 gap-3' : 'justify-center'
-                } ${
-                  isActive
-                    ? 'text-blue-400 font-semibold shadow-[0_0_0_1px_rgba(96,165,250,0.12)]'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-                }`}
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="active-nav"
-                    className="absolute inset-0 bg-blue-500/10 border border-blue-500/20 rounded-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
-                    initial={false}
-                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                  />
-                )}
-                <Icon size={20} className="relative z-10 shrink-0" />
-                <span
-                  className={`relative z-10 whitespace-nowrap overflow-hidden transition-opacity duration-200 ${
-                    isSidebarExpanded ? 'opacity-100 w-auto' : 'opacity-0 w-0'
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center min-h-[44px] py-3 rounded-xl transition-all duration-150 relative ${
+                    isSidebarExpanded ? 'px-4 gap-3' : 'justify-center'
+                  } ${
+                    isActive
+                      ? 'text-blue-400 font-semibold shadow-[0_0_0_1px_rgba(96,165,250,0.12)]'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
                   }`}
                 >
-                  {item.name}
-                </span>
-              </Link>
-            );
-          })}
-        </nav>
+                  {isActive && (
+                    <motion.div
+                      layoutId="active-nav"
+                      className="absolute inset-0 bg-blue-500/10 border border-blue-500/20 rounded-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+                      initial={false}
+                      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                    />
+                  )}
+                  <Icon size={20} className="relative z-10 shrink-0" />
+                  <span
+                    className={`relative z-10 whitespace-nowrap overflow-hidden transition-opacity duration-200 ${
+                      isSidebarExpanded ? 'opacity-100 w-auto' : 'opacity-0 w-0'
+                    }`}
+                  >
+                    {item.name}
+                  </span>
+                </Link>
+              );
+            })}
+          </nav>
 
-        {isSidebarExpanded && (
-          <div className="px-6 pb-2">
-            <p
-              className="text-[11px] text-slate-400 tracking-[0.08em] italic"
-              style={{ fontFamily: 'Georgia, "Times New Roman", Times, serif' }}
-            >
-              Designed by Khánh Duy
-            </p>
-          </div>
-        )}
+          {isSidebarExpanded && (
+            <div className="px-6 pb-2">
+              <p
+                className="text-[11px] text-slate-400 tracking-[0.08em] italic"
+                style={{ fontFamily: 'Georgia, "Times New Roman", Times, serif' }}
+              >
+                Designed by Khánh Duy
+              </p>
+            </div>
+          )}
 
-        {/* User + Sign Out */}
-        <div className={`p-4 border-t border-white/10 ${isSidebarExpanded ? '' : 'flex justify-center'}`}>
-          {isSidebarExpanded ? (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
-              <div className="flex items-center gap-3 px-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-xs font-semibold text-white shrink-0 shadow-sm">
-                  {user?.email?.[0]?.toUpperCase() ?? 'U'}
+          <div className={`p-4 border-t border-white/10 ${isSidebarExpanded ? '' : 'flex justify-center'}`}>
+            {isSidebarExpanded ? (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+                <div className="flex items-center gap-3 px-2">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-xs font-semibold text-white shrink-0 shadow-sm">
+                    {user?.email?.[0]?.toUpperCase() ?? 'U'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-slate-300 truncate">{user?.email}</p>
+                    <p className="text-xs text-slate-500">Đã đăng nhập</p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-slate-300 truncate">{user?.email}</p>
-                  <p className="text-xs text-slate-500">Đã đăng nhập</p>
+                <div className="flex items-center justify-between px-2 py-1 rounded-lg bg-white/5 border border-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+                  <span className="text-xs text-slate-300 font-medium">Ngày / Đêm</span>
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    className="dark-2"
+                    checked={isDayMode}
+                    onChange={(event) => handleThemeToggle(!event.target.checked)}
+                    aria-label="Chuyển ngày đêm"
+                    title="Chuyển ngày đêm"
+                  />
                 </div>
-              </div>
-              <div className="flex items-center justify-between px-2 py-1 rounded-lg bg-white/5 border border-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-                <span className="text-xs text-slate-300 font-medium">Ngày / Đêm</span>
+                <button
+                  onClick={handleSignOut}
+                  className="w-full min-h-[44px] flex items-center gap-2 py-3 px-4 text-sm text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors duration-150 shadow-sm"
+                >
+                  <LogOut size={16} /> Đăng xuất
+                </button>
+              </motion.div>
+            ) : (
+              <div className="flex flex-col items-center gap-3">
                 <input
                   type="checkbox"
                   role="switch"
@@ -147,41 +167,123 @@ export function Layout() {
                   aria-label="Chuyển ngày đêm"
                   title="Chuyển ngày đêm"
                 />
+                <button
+                  onClick={handleSignOut}
+                  title="Đăng xuất"
+                  className="min-h-[44px] min-w-[44px] p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors duration-150"
+                >
+                  <LogOut size={20} />
+                </button>
               </div>
-              <button
-                onClick={handleSignOut}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors duration-150 shadow-sm"
-              >
-                <LogOut size={16} /> Đăng xuất
-              </button>
-            </motion.div>
-          ) : (
-            <div className="flex flex-col items-center gap-3">
-              <input
-                type="checkbox"
-                role="switch"
-                className="dark-2"
-                checked={isDayMode}
-                onChange={(event) => handleThemeToggle(!event.target.checked)}
-                aria-label="Chuyển ngày đêm"
-                title="Chuyển ngày đêm"
-              />
-              <button
-                onClick={handleSignOut}
-                title="Đăng xuất"
-                className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors duration-150"
-              >
-                <LogOut size={20} />
-              </button>
+            )}
+          </div>
+        </motion.aside>
+      </div>
+
+      <Sheet open={isMobileSheetOpen} onOpenChange={setIsMobileSheetOpen}>
+        <SheetContent
+          side="left"
+          className="w-[85vw] max-w-[320px] border-r border-white/10 bg-[#07080a] p-0 text-slate-100"
+        >
+          <SheetTitle className="sr-only">Menu điều hướng</SheetTitle>
+          <div className="flex h-full flex-col">
+            <div className="p-6">
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
+                QzMaster
+              </h2>
             </div>
-          )}
-        </div>
-      </motion.aside>
+
+            <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
+              {navItems.map((item) => {
+                const isActive =
+                  location.pathname === item.path ||
+                  (location.pathname.startsWith('/exam') && item.path.startsWith('/exam'));
+                const Icon = item.icon;
+
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={() => setIsMobileSheetOpen(false)}
+                    className={`flex items-center gap-3 min-h-[44px] py-3 px-4 rounded-xl transition-all duration-150 relative ${
+                      isActive
+                        ? 'text-blue-400 font-semibold shadow-[0_0_0_1px_rgba(96,165,250,0.12)]'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                    }`}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="active-nav"
+                        className="absolute inset-0 bg-blue-500/10 border border-blue-500/20 rounded-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+                        initial={false}
+                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                      />
+                    )}
+                    <Icon size={20} className="relative z-10 shrink-0" />
+                    <span className="relative z-10">{item.name}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+
+            <div className="px-6 pb-2">
+              <p
+                className="text-[11px] text-slate-400 tracking-[0.08em] italic"
+                style={{ fontFamily: 'Georgia, "Times New Roman", Times, serif' }}
+              >
+                Designed by Khánh Duy
+              </p>
+            </div>
+
+            <div className="p-4 border-t border-white/10">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 px-2">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-xs font-semibold text-white shrink-0 shadow-sm">
+                    {user?.email?.[0]?.toUpperCase() ?? 'U'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-slate-300 truncate">{user?.email}</p>
+                    <p className="text-xs text-slate-500">Đã đăng nhập</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between px-2 py-1 rounded-lg bg-white/5 border border-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+                  <span className="text-xs text-slate-300 font-medium">Ngày / Đêm</span>
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    className="dark-2"
+                    checked={isDayMode}
+                    onChange={(event) => handleThemeToggle(!event.target.checked)}
+                    aria-label="Chuyển ngày đêm"
+                    title="Chuyển ngày đêm"
+                  />
+                </div>
+                <button
+                  onClick={handleSignOut}
+                  className="w-full min-h-[44px] flex items-center gap-2 py-3 px-4 text-sm text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors duration-150 shadow-sm"
+                >
+                  <LogOut size={16} /> Đăng xuất
+                </button>
+              </div>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Main Content */}
       <main className="flex-1 relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-950/20 via-[#07080a] to-[#07080a] -z-10" />
-        <div className="h-full overflow-y-auto p-8">
+        <div className="md:hidden sticky top-0 z-20 border-b border-white/10 bg-[#07080a]/90 backdrop-blur-md px-4 py-3">
+          <button
+            onClick={() => setIsMobileSheetOpen(true)}
+            className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-lg text-slate-300 hover:bg-white/5 hover:text-white transition-colors"
+            aria-label="Mở menu điều hướng"
+            title="Mở menu điều hướng"
+          >
+            <Menu size={22} />
+          </button>
+        </div>
+        <div className="h-full overflow-y-auto p-4 md:p-8">
           <Outlet />
         </div>
       </main>

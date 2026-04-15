@@ -27,60 +27,24 @@ export function History() {
     return matchesSearch && matchesDate;
   });
 
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-6">
-      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/50 p-6 rounded-2xl border border-slate-800 backdrop-blur-sm">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-100">Lịch sử làm bài</h1>
-          <p className="text-sm text-slate-400 mt-1">Xem lại kết quả các bài thi trước</p>
-        </div>
+  let content: React.ReactNode;
 
-        <div className="flex w-full sm:w-auto gap-3">
-          <div className="relative flex-1 sm:w-64">
-            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
-              <Search size={16} />
-            </div>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-slate-950 border border-slate-800 text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 outline-none transition-colors"
-              placeholder="Tìm theo tên kho..."
-            />
-          </div>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-44 p-2.5 outline-none transition-colors"
-            aria-label="Lọc theo ngày thi"
-          />
-          {selectedDate ? (
-            <button
-              type="button"
-              onClick={() => setSelectedDate("")}
-              className="px-3 py-2.5 text-xs rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 transition-colors"
-            >
-              Xóa ngày
-            </button>
-          ) : null}
-        </div>
-      </header>
-
-      {history.length === 0 ? (
-        <div className="text-center py-16 text-slate-500 flex flex-col items-center">
-          <HistoryIcon size={64} className="mb-4 opacity-20" />
-          <p className="text-lg">Chưa có lịch sử làm bài nào.</p>
-          <Link to="/exam/config" className="text-blue-400 hover:text-blue-300 mt-2 underline transition-colors">
-            Bắt đầu thi thử ngay
-          </Link>
-        </div>
-      ) : filteredHistory.length === 0 ? (
-        <div className="text-center py-12 text-slate-500">
-          Không tìm thấy kết quả nào phù hợp.
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-4">
+  if (history.length === 0) {
+    content = (
+      <div className="text-center py-16 text-slate-500 flex flex-col items-center">
+        <HistoryIcon size={64} className="mb-4 opacity-20" />
+        <p className="text-lg">Chưa có lịch sử làm bài nào.</p>
+        <Link to="/exam/config" className="inline-flex items-center min-h-[44px] py-3 px-4 text-blue-400 hover:text-blue-300 mt-2 underline transition-colors">
+          Bắt đầu thi thử ngay
+        </Link>
+      </div>
+    );
+  } else if (filteredHistory.length === 0) {
+    content = <div className="text-center py-12 text-slate-500">Không tìm thấy kết quả nào phù hợp.</div>;
+  } else {
+    content = (
+      <div className="overflow-x-auto">
+        <div className="grid grid-cols-1 gap-4 min-w-0">
           <AnimatePresence>
             {filteredHistory.map((item, index) => {
               const safeTotal = item.total > 0 ? item.total : item.questions.length;
@@ -110,9 +74,7 @@ export function History() {
                       <span className="flex items-center gap-1 capitalize">
                         <Award size={14} /> {item.mode}
                       </span>
-                      <span className="flex items-center gap-1">
-                         Thời gian: {formatTime(item.timeTaken)}
-                      </span>
+                      <span className="flex items-center gap-1">Thời gian: {formatTime(item.timeTaken)}</span>
                     </div>
                   </div>
 
@@ -120,10 +82,10 @@ export function History() {
                     <div className={`px-4 py-2 rounded-lg border ${scoreColor} flex flex-col items-center justify-center min-w-[80px]`}>
                       <span className="text-xl font-bold">{safeScore}/{safeTotal}</span>
                     </div>
-                    
+
                     <Link
                       to={`/review/${item.id}`}
-                      className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-blue-600 text-slate-300 hover:text-white rounded-lg transition-all border border-slate-700 hover:border-blue-500 group-hover:shadow-[0_0_15px_rgba(59,130,246,0.3)]"
+                      className="flex items-center gap-2 min-h-[44px] py-3 px-4 bg-slate-800 hover:bg-blue-600 text-slate-300 hover:text-white rounded-lg transition-all border border-slate-700 hover:border-blue-500 group-hover:shadow-[0_0_15px_rgba(59,130,246,0.3)]"
                     >
                       Chi tiết <ArrowRight size={16} />
                     </Link>
@@ -133,7 +95,51 @@ export function History() {
             })}
           </AnimatePresence>
         </div>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-6">
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/50 p-6 rounded-2xl border border-slate-800 backdrop-blur-sm">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-100">Lịch sử làm bài</h1>
+          <p className="text-sm text-slate-400 mt-1">Xem lại kết quả các bài thi trước</p>
+        </div>
+
+        <div className="flex w-full sm:w-auto flex-col sm:flex-row gap-3">
+          <div className="relative flex-1 sm:w-64">
+            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+              <Search size={16} />
+            </div>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="bg-slate-950 border border-slate-800 text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 py-3 px-4 min-h-[44px] outline-none transition-colors"
+              placeholder="Tìm theo tên kho..."
+            />
+          </div>
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="bg-slate-950 border border-slate-800 text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full sm:w-44 py-3 px-4 min-h-[44px] outline-none transition-colors"
+            aria-label="Lọc theo ngày thi"
+          />
+          {selectedDate ? (
+            <button
+              type="button"
+              onClick={() => setSelectedDate("")}
+              className="py-3 px-4 min-h-[44px] text-xs rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 transition-colors"
+            >
+              Xóa ngày
+            </button>
+          ) : null}
+        </div>
+      </header>
+
+      {content}
     </motion.div>
   );
 }

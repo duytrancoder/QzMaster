@@ -152,9 +152,9 @@ export function ExamPlay() {
   const progressPercent = (answeredCount / activeExam.questions.length) * 100;
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-6rem)] relative overflow-hidden">
+    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 h-[calc(100vh-6rem)] relative overflow-hidden">
       {/* Main Content */}
-      <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex-1 overflow-y-auto pr-2 custom-scrollbar pb-32 lg:pb-0 relative space-y-6">
+      <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex-1 overflow-y-auto pr-0 lg:pr-2 custom-scrollbar pb-32 lg:pb-0 relative space-y-6">
         <header className="sticky top-0 z-10 bg-slate-950/80 backdrop-blur-md pb-4 pt-2 border-b border-slate-800">
           <h1 className="text-2xl font-bold text-slate-100">{activeExam.bankName}</h1>
           <p className="text-sm text-slate-400">
@@ -183,7 +183,7 @@ export function ExamPlay() {
                   <button
                     key={opt}
                     onClick={() => handleSelectAnswer(q.id, opt)}
-                    className={`text-left p-4 rounded-xl border transition-all flex items-start gap-3 ${
+                    className={`text-left min-h-[44px] py-3 px-4 rounded-xl border transition-all flex items-start gap-3 ${
                       isSelected
                         ? 'bg-blue-600/20 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.15)] ring-1 ring-blue-500'
                         : 'bg-slate-950 border-slate-800 hover:bg-slate-800/80 hover:border-slate-700 text-slate-300'
@@ -247,7 +247,7 @@ export function ExamPlay() {
               <button
                 key={q.id}
                 onClick={() => scrollToQuestion(i)}
-                className={`w-10 h-10 rounded-lg text-xs font-bold transition-all border flex items-center justify-center ${
+                className={`w-11 h-11 min-h-[44px] min-w-[44px] rounded-lg text-xs font-bold transition-all border flex items-center justify-center ${
                   answers[q.id]
                     ? 'bg-blue-600 border-blue-500 text-white shadow-sm shadow-blue-500/20'
                     : 'bg-slate-950 border-slate-800 text-slate-500 hover:bg-slate-800'
@@ -261,7 +261,7 @@ export function ExamPlay() {
           <button
             onClick={() => handleSubmit()}
             disabled={isSubmitting}
-            className="w-full mt-6 flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)]"
+            className="w-full mt-6 min-h-[44px] py-3 px-4 flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)]"
           >
             {isSubmitting ? (
               <span className="flex items-center gap-2">

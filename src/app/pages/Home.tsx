@@ -21,7 +21,7 @@ export function Home() {
 
   return (
     <div
-      className="-m-8 h-full overflow-hidden bg-[#07080a]"
+      className="-mx-4 -mb-4 md:-m-8 h-full overflow-hidden bg-[#07080a]"
       style={{
         backgroundImage: `url(${HOME_BG_URL})`,
         backgroundRepeat: 'no-repeat',

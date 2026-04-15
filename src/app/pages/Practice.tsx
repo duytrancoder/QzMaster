@@ -86,7 +86,7 @@ export function Practice() {
     if (!query) return null;
 
     try {
-      const escaped = query.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const escaped = query.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
       return new RegExp(escaped, 'gi');
     } catch {
       return null;
@@ -138,6 +138,70 @@ export function Practice() {
     );
   }
 
+  let content: React.ReactNode;
+
+  if (isLoadingQuestions) {
+    content = (
+      <div className="text-center py-12 text-slate-500 space-y-3">
+        <div className="w-8 h-8 border-2 border-slate-700 border-t-blue-500 rounded-full animate-spin mx-auto" />
+        <p className="text-sm font-medium">Đang tải câu hỏi...</p>
+      </div>
+    );
+  } else if (questions.length === 0) {
+    content = (
+      <div className="text-center py-12 text-slate-500 flex flex-col items-center">
+        <AlertCircle size={32} className="mb-2 opacity-50 text-amber-500" />
+        <p>Kho này chưa có câu hỏi nào.</p>
+      </div>
+    );
+  } else if (filteredQuestions.length === 0) {
+    content = <div className="text-center py-12 text-slate-500">Không tìm thấy câu hỏi nào phù hợp với "{searchQuery}"</div>;
+  } else {
+    content = (
+      <div className="space-y-4 pb-20">
+        {filteredQuestions.map(({ question: q, questionNumber }) => {
+          const isRevealed = showAllAnswers;
+          return (
+            <div
+              key={q.id}
+              className="bg-slate-900/40 border border-slate-800 rounded-xl p-5 hover:bg-slate-900/60 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+            >
+              <div className="flex justify-between items-start gap-4 mb-4">
+                <h3 className="text-slate-200 font-medium leading-relaxed tracking-tight">
+                  <span className="text-blue-400 font-bold mr-2">Câu {questionNumber}:</span>
+                  {highlightText(q.content || q.text || '')}
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {(['A', 'B', 'C', 'D'] as const).map((opt) => {
+                  const isCorrect = (q.correctAnswer || q.correct) === opt;
+                  const showAsCorrect = isRevealed && isCorrect;
+
+                  return (
+                    <div
+                      key={opt}
+                      className={`p-3 rounded-lg border transition-all duration-150 ${
+                        showAsCorrect
+                          ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-100 shadow-[0_0_15px_rgba(16,185,129,0.1)] ring-1 ring-emerald-500/50'
+                          : 'bg-slate-950 border-slate-800 text-slate-400 opacity-80'
+                      } ${isRevealed && !isCorrect ? 'opacity-30 grayscale' : ''}`}
+                    >
+                      <span className={`font-bold mr-2 ${showAsCorrect ? 'text-emerald-400' : 'text-slate-500'}`}>
+                        {opt}.
+                      </span>
+                      {highlightText(q.options[opt])}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto space-y-6">
       <header className="flex flex-col md:flex-row gap-4 justify-between md:items-center bg-slate-900/50 p-6 rounded-2xl border border-slate-800 backdrop-blur-sm shadow-md">
@@ -155,7 +219,7 @@ export function Practice() {
                 setShowAllAnswers(false);
                 setSearchQuery('');
               }}
-              className="flex-1 bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none appearance-none transition-colors duration-150"
+              className="flex-1 min-h-[44px] bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block py-3 px-4 outline-none appearance-none transition-colors duration-150"
             >
               {banks.map((b) => (
                 <option key={b.id} value={b.id}>{getBankOptionLabel(b.name)}</option>
@@ -177,13 +241,13 @@ export function Practice() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-slate-950 border border-slate-800 text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 outline-none transition-colors duration-150"
+              className="bg-slate-950 border border-slate-800 text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 py-3 px-4 min-h-[44px] outline-none transition-colors duration-150"
               placeholder="Tìm kiếm câu hỏi..."
             />
           </div>
           <button
             onClick={() => setShowAllAnswers(!showAllAnswers)}
-            className={`w-full sm:w-auto px-4 py-2.5 rounded-lg border flex items-center justify-center gap-2 text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 ${
+            className={`w-full sm:w-auto min-h-[44px] py-3 px-4 rounded-lg border flex items-center justify-center gap-2 text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 ${
               showAllAnswers
                 ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
                 : 'bg-blue-600 border-blue-500 text-white hover:bg-blue-500'
@@ -194,63 +258,7 @@ export function Practice() {
         </div>
       </header>
 
-      {isLoadingQuestions ? (
-        <div className="text-center py-12 text-slate-500 space-y-3">
-          <div className="w-8 h-8 border-2 border-slate-700 border-t-blue-500 rounded-full animate-spin mx-auto" />
-          <p className="text-sm font-medium">Đang tải câu hỏi...</p>
-        </div>
-      ) : questions.length === 0 ? (
-        <div className="text-center py-12 text-slate-500 flex flex-col items-center">
-          <AlertCircle size={32} className="mb-2 opacity-50 text-amber-500" />
-          <p>Kho này chưa có câu hỏi nào.</p>
-        </div>
-      ) : filteredQuestions.length === 0 ? (
-        <div className="text-center py-12 text-slate-500">
-          Không tìm thấy câu hỏi nào phù hợp với "{searchQuery}"
-        </div>
-      ) : (
-        <div className="space-y-4 pb-20">
-          {filteredQuestions.map(({ question: q, questionNumber }) => {
-            const isRevealed = showAllAnswers;
-            return (
-              <div
-                key={q.id}
-                className="bg-slate-900/40 border border-slate-800 rounded-xl p-5 hover:bg-slate-900/60 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
-              >
-                <div className="flex justify-between items-start gap-4 mb-4">
-                    <h3 className="text-slate-200 font-medium leading-relaxed tracking-tight">
-                    <span className="text-blue-400 font-bold mr-2">Câu {questionNumber}:</span>
-                    {highlightText(q.content || q.text || '')}
-                  </h3>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {(['A', 'B', 'C', 'D'] as const).map((opt) => {
-                    const isCorrect = (q.correctAnswer || q.correct) === opt;
-                    const showAsCorrect = isRevealed && isCorrect;
-
-                    return (
-                      <div
-                        key={opt}
-                        className={`p-3 rounded-lg border transition-all duration-150 ${
-                          showAsCorrect
-                            ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-100 shadow-[0_0_15px_rgba(16,185,129,0.1)] ring-1 ring-emerald-500/50'
-                            : 'bg-slate-950 border-slate-800 text-slate-400 opacity-80'
-                        } ${isRevealed && !isCorrect ? 'opacity-30 grayscale' : ''}`}
-                      >
-                        <span className={`font-bold mr-2 ${showAsCorrect ? 'text-emerald-400' : 'text-slate-500'}`}>
-                          {opt}.
-                        </span>
-                        {highlightText(q.options[opt])}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      {content}
     </motion.div>
   );
 }

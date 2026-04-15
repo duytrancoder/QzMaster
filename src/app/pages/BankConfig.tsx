@@ -99,14 +99,14 @@ export function BankConfig() {
             <>
               <button
                 onClick={handleShareCode}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 font-medium"
+                className="inline-flex items-center gap-2 min-h-[44px] py-3 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 font-medium"
               >
                 {bank.shareCode ? <Copy size={16} /> : <LinkIcon size={16} />}
                 {bank.shareCode ? 'Copy mã' : 'Tạo mã chia sẻ'}
               </button>
               <button
                 onClick={handleDeleteBank}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 font-medium"
+                className="inline-flex items-center gap-2 min-h-[44px] py-3 px-4 rounded-lg bg-red-600 hover:bg-red-500 text-white transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 font-medium"
               >
                 <Trash2 size={16} /> Xóa kho
               </button>
@@ -114,7 +114,7 @@ export function BankConfig() {
           ) : (
             <button
               onClick={handleLeaveBank}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 font-medium"
+              className="inline-flex items-center gap-2 min-h-[44px] py-3 px-4 rounded-lg bg-red-600 hover:bg-red-500 text-white transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 font-medium"
             >
               <Trash2 size={16} /> Rời kho
             </button>
@@ -216,7 +216,7 @@ function QuestionsSection({ bankId, isOwner }: Readonly<{ bankId: string; isOwne
               {isOwner ? (
                 <button
                   onClick={() => void handleDeleteQuestion(q.id)}
-                  className="text-slate-500 hover:text-red-400 transition-colors shrink-0"
+                  className="text-slate-500 hover:text-red-400 transition-colors shrink-0 min-h-[44px] min-w-[44px]"
                 >
                   <Trash2 size={16} />
                 </button>
@@ -264,7 +264,7 @@ function QuestionsSection({ bankId, isOwner }: Readonly<{ bankId: string; isOwne
                 variant="outline"
                 onClick={handleOpenImportDialog}
                 disabled={isImporting}
-                className="min-w-[160px] justify-start border-slate-700 bg-transparent pl-3 pr-14 text-slate-200 hover:bg-slate-800 hover:text-slate-50 transition-colors duration-150"
+                className="min-w-[160px] min-h-[44px] py-3 px-4 justify-start border-slate-700 bg-transparent pl-3 pr-14 text-slate-200 hover:bg-slate-800 hover:text-slate-50 transition-colors duration-150"
               >
                 {isImporting ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />} Nhập JSON
               </Button>
@@ -274,7 +274,7 @@ function QuestionsSection({ bankId, isOwner }: Readonly<{ bankId: string; isOwne
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="absolute right-2 top-1/2 z-10 size-6 -translate-y-1/2 rounded-full border border-slate-600/80 bg-slate-900/80 p-0 text-slate-300 shadow-sm hover:bg-slate-700 hover:text-slate-100 transition-colors duration-150"
+                    className="absolute right-2 top-1/2 z-10 size-11 min-h-[44px] min-w-[44px] -translate-y-1/2 rounded-full border border-slate-600/80 bg-slate-900/80 p-0 text-slate-300 shadow-sm hover:bg-slate-700 hover:text-slate-100 transition-colors duration-150"
                     aria-label="Trợ giúp nhập JSON"
                   >
                     <CircleHelp size={13} />
@@ -336,7 +336,7 @@ function QuestionsSection({ bankId, isOwner }: Readonly<{ bankId: string; isOwne
             </div>
             <button
               onClick={() => setShowAddQuestion((prev) => !prev)}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 transition-colors"
+              className="inline-flex items-center gap-2 min-h-[44px] py-3 px-4 rounded-lg bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 transition-colors"
             >
               <Plus size={16} /> Thêm câu hỏi
             </button>
@@ -413,7 +413,7 @@ function AddQuestionForm({ onAdd, onCancel }: Readonly<{ onAdd: (q: Question) =>
             <button
               type="button"
               onClick={() => setCorrectAnswer(opt)}
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors ${
+              className={`w-11 h-11 min-h-[44px] min-w-[44px] rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors ${
                 correctAnswer === opt ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
               }`}
             >
@@ -435,14 +435,14 @@ function AddQuestionForm({ onAdd, onCancel }: Readonly<{ onAdd: (q: Question) =>
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-md transition-colors duration-150"
+          className="min-h-[44px] py-3 px-4 text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-md transition-colors duration-150"
         >
           Hủy
         </button>
         <button
           type="submit"
           disabled={isSubmitting}
-          className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-md transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2"
+          className="min-h-[44px] py-3 px-4 text-sm bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-md transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2"
         >
           <Save size={16} /> {isSubmitting ? 'Đang lưu...' : 'Lưu câu hỏi'}
         </button>

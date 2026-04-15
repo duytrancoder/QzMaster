@@ -107,23 +107,23 @@ export function ExamConfig() {
   }
 
   return (
-    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="max-w-2xl mx-auto space-y-8">
+    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-[95vw] sm:max-w-2xl mx-auto space-y-6 sm:space-y-8">
       <header className="text-center space-y-2">
         <h1 className="text-3xl font-bold text-slate-100">Cấu hình bài thi</h1>
         <p className="text-slate-400">Thiết lập các thông số trước khi bắt đầu</p>
       </header>
 
-      <div className="bg-slate-900/40 border border-slate-800 p-8 rounded-2xl backdrop-blur-sm shadow-xl space-y-8">
+      <div className="bg-slate-900/40 border border-slate-800 p-4 sm:p-8 rounded-2xl backdrop-blur-sm shadow-xl space-y-6 sm:space-y-8">
         {/* Kho dữ liệu */}
         <section className="space-y-3">
           <label className="text-sm font-semibold text-blue-400 flex items-center gap-2">
             <CheckCircle2 size={16} /> Chọn Kho Ôn Tập
           </label>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
             <select
               value={selectedBankId}
               onChange={(e) => setSelectedBankId(e.target.value)}
-              className="flex-1 bg-slate-950 border border-slate-700 text-slate-200 text-base rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-4 outline-none appearance-none transition-shadow cursor-pointer hover:border-slate-600"
+              className="flex-1 min-h-[44px] bg-slate-950 border border-slate-700 text-slate-200 text-base rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block py-3 px-4 outline-none appearance-none transition-shadow cursor-pointer hover:border-slate-600"
             >
               {banks.map((b) => (
                 <option key={b.id} value={b.id}>{getBankOptionLabel(b.name)}</option>
@@ -131,7 +131,7 @@ export function ExamConfig() {
             </select>
 
             {selectedBank ? (
-              <span className={`text-xs px-3 py-2 rounded-lg border whitespace-nowrap ${selectedBankBadgeClass}`}>
+              <span className={`text-xs px-3 py-2 rounded-lg border whitespace-nowrap w-fit ${selectedBankBadgeClass}`}>
                 {selectedBank.isShared ? 'Shared' : 'Owner'}
               </span>
             ) : null}
@@ -140,7 +140,7 @@ export function ExamConfig() {
           {isLoadingQuestions && (
             <p className="text-xs text-slate-500 flex items-center gap-2">
               <span className="inline-block w-3 h-3 border border-slate-600 border-t-blue-500 rounded-full animate-spin" />
-              Đang tải câu hỏi...
+              {' '}Đang tải câu hỏi...
             </p>
           )}
         </section>
@@ -159,7 +159,7 @@ export function ExamConfig() {
               <button
                 key={m.id}
                 onClick={() => setMode(m.id as typeof mode)}
-                className={`p-4 rounded-xl border text-center transition-all ${
+                className={`min-h-[44px] py-3 px-4 rounded-xl border text-center transition-all ${
                   mode === m.id
                     ? 'bg-indigo-600/20 border-indigo-500 text-indigo-200 shadow-[0_0_15px_rgba(99,102,241,0.2)]'
                     : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-300'
@@ -173,17 +173,18 @@ export function ExamConfig() {
           <AnimatePresence mode="wait">
             {mode === 'random' && (
               <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="pt-2">
-                <div className="flex items-center gap-4 bg-slate-950 p-4 rounded-xl border border-slate-800">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4 bg-slate-950 p-4 rounded-xl border border-slate-800">
                   <Hash className="text-slate-500" size={20} />
                   <div className="flex-1">
-                    <label className="text-xs text-slate-500 mb-1 block">Số lượng câu hỏi</label>
+                    <label htmlFor="random-count" className="text-xs text-slate-500 mb-1 block">Số lượng câu hỏi</label>
                     <input
+                      id="random-count"
                       type="number"
                       min={1}
                       max={questions.length || 1}
                       value={randomCount}
                       onChange={(e) => setRandomCount(Number(e.target.value))}
-                      className="w-full bg-transparent text-slate-200 outline-none font-medium"
+                      className="w-full min-h-[44px] py-3 bg-transparent text-slate-200 outline-none font-medium"
                     />
                   </div>
                   <div className="text-xs text-slate-500 bg-slate-900 px-3 py-1 rounded-full border border-slate-800">
@@ -206,13 +207,13 @@ export function ExamConfig() {
                             : new Set(questions.map((q) => q.id))
                         )
                       }
-                      className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+                      className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors min-h-[44px] py-3 px-4"
                     >
                       {selectedQuestions.size === questions.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
                     </button>
                   </div>
                   {questions.map((q, i) => (
-                    <label key={q.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-900 cursor-pointer border border-transparent hover:border-slate-800 transition-colors group">
+                    <label key={q.id} className="flex items-start gap-3 min-h-[44px] py-3 px-4 rounded-lg hover:bg-slate-900 cursor-pointer border border-transparent hover:border-slate-800 transition-colors group">
                       <input
                         type="checkbox"
                         checked={selectedQuestions.has(q.id)}
@@ -241,13 +242,13 @@ export function ExamConfig() {
           <label className="text-sm font-semibold text-emerald-400 flex items-center gap-2">
             <Clock size={16} /> Thời Gian Làm Bài (phút)
           </label>
-          <div className="flex items-center gap-4 bg-slate-950 p-4 rounded-xl border border-slate-800">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 bg-slate-950 p-4 rounded-xl border border-slate-800">
             <input
               type="number"
               min={0}
               value={timeLimit}
               onChange={(e) => setTimeLimit(Number(e.target.value))}
-              className="w-full bg-transparent text-slate-200 outline-none font-medium text-lg"
+              className="w-full min-h-[44px] py-3 bg-transparent text-slate-200 outline-none font-medium text-lg"
               placeholder="0"
             />
             <div className="text-xs text-slate-500 bg-slate-900 px-3 py-1 rounded-full border border-slate-800 whitespace-nowrap">
@@ -262,7 +263,7 @@ export function ExamConfig() {
           <button
             onClick={handleStart}
             disabled={isLoadingQuestions || questions.length === 0}
-            className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-lg py-4 rounded-xl transition-all shadow-[0_0_30px_rgba(79,70,229,0.3)] hover:shadow-[0_0_40px_rgba(79,70,229,0.5)] transform hover:-translate-y-1"
+            className="w-full min-h-[44px] py-3 px-4 flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-lg rounded-xl transition-all shadow-[0_0_30px_rgba(79,70,229,0.3)] hover:shadow-[0_0_40px_rgba(79,70,229,0.5)] transform hover:-translate-y-1"
           >
             Bắt đầu thi <Play fill="currentColor" size={20} />
           </button>
