@@ -251,8 +251,11 @@ function BankListItem({
   onLeaveSharedBank: (bankId: string) => Promise<void>;
 }>) {
   return (
-    <div className="w-full h-full group bg-slate-900/40 border border-slate-800 rounded-xl p-5 hover:bg-slate-900/70 hover:border-slate-700 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col gap-4">
-      <button type="button" onClick={onClick} className="text-left min-w-0 flex-1 min-h-[44px]">
+    <div 
+      onClick={onClick}
+      className="w-full h-full group bg-slate-900/40 border border-slate-800 rounded-xl p-5 hover:bg-slate-900/70 hover:border-slate-700 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col gap-4 cursor-pointer relative"
+    >
+      <div className="text-left min-w-0 flex-1 min-h-[44px]">
         <div className="flex items-center gap-2 flex-wrap">
           <h3 className="text-lg font-semibold tracking-tight text-slate-100 truncate">{bank.name}</h3>
           <span className={`text-xs px-2 py-1 rounded-full border font-medium ${isOwner ? 'bg-blue-500/10 border-blue-500/20 text-blue-300' : 'bg-amber-500/10 border-amber-500/20 text-amber-300'}`}>
@@ -262,20 +265,20 @@ function BankListItem({
         <p className="text-sm text-slate-400 mt-2">
           {isOwner ? 'Bấm để mở màn cấu hình kho' : 'Kho được chia sẻ - chỉ đọc'}
         </p>
-      </button>
+      </div>
 
       {isOwner ? (
         <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
-            onClick={() => onShareCode(bank.id)}
+            onClick={(e) => { e.stopPropagation(); onShareCode(bank.id); }}
             className="flex items-center gap-2 min-h-[44px] py-3 px-4 rounded-lg bg-indigo-600/10 text-indigo-300 hover:bg-indigo-600/20 transition-colors duration-150 font-medium shadow-sm hover:shadow-md"
           >
             {bank.shareCode ? 'Copy mã' : 'Tạo mã'}
           </button>
           <button
             type="button"
-            onClick={() => onDeleteBank(bank.id)}
+            onClick={(e) => { e.stopPropagation(); onDeleteBank(bank.id); }}
             className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg border border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20 transition-colors duration-150 shadow-sm hover:shadow-md"
             title="Xóa kho"
             aria-label="Xóa kho"
@@ -287,14 +290,14 @@ function BankListItem({
         <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
-            onClick={() => onCopySharedCode(bank)}
+            onClick={(e) => { e.stopPropagation(); onCopySharedCode(bank); }}
             className="flex items-center gap-2 min-h-[44px] py-3 px-4 rounded-lg bg-indigo-600/10 text-indigo-300 hover:bg-indigo-600/20 transition-colors duration-150 font-medium shadow-sm hover:shadow-md"
           >
             Copy mã
           </button>
           <button
             type="button"
-            onClick={() => onLeaveSharedBank(bank.id)}
+            onClick={(e) => { e.stopPropagation(); onLeaveSharedBank(bank.id); }}
             className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg border border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20 transition-colors duration-150 shadow-sm hover:shadow-md"
             title="Rời kho"
             aria-label="Rời kho"
@@ -304,7 +307,7 @@ function BankListItem({
         </div>
       )}
 
-      <ChevronRight size={18} className="text-slate-500 group-hover:text-slate-200 transition-colors duration-200 shrink-0 self-end" />
+      <ChevronRight size={18} className="text-slate-500 group-hover:text-slate-200 transition-colors duration-200 shrink-0 self-end absolute right-5 top-1/2 -translate-y-1/2" />
     </div>
   );
 }
