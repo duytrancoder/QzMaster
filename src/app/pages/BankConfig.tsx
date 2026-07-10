@@ -274,10 +274,10 @@ function QuestionsSection({ bankId, isOwner }: Readonly<{ bankId: string; isOwne
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="absolute right-2 top-1/2 z-10 size-11 min-h-[44px] min-w-[44px] -translate-y-1/2 rounded-full border border-slate-600/80 bg-slate-900/80 p-0 text-slate-300 shadow-sm hover:bg-slate-700 hover:text-slate-100 transition-colors duration-150"
+                    className="absolute right-1 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-slate-400 hover:bg-slate-800 hover:text-slate-100 transition-colors duration-150"
                     aria-label="Trợ giúp nhập JSON"
                   >
-                    <CircleHelp size={13} />
+                    <CircleHelp size={18} />
                   </Button>
                 </PopoverTrigger>
               <PopoverContent align="end" className="w-[min(92vw,560px)] space-y-3">
